@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>비즈니스 애널리틱스 2026</title>
+<meta name="description" content="부경대학교 시스템경영공학부 비즈니스 애널리틱스(2026). 주차별 강의 교재와 랩을 Google Colab에서 바로 연다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* balab.PALETTE — 강의 노트북 차트와 같은 시각 언어 */
+    --surf: #fcfcfb;
+    --ink: #0b0b0b;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --blue: #2a78d6;
+    --blue-a: #cde2fb;
+    --blue-b: #e7f0fb;
+    --amber: #eda100;
+    --red: #e34948;
+    --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --serif: "Noto Serif KR", "Apple Myungjo", serif;
+    --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--surf);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+  /* ── 머리글 ─────────────────────────────── */
+  header { border-bottom: 1px solid var(--ink); padding: 44px 0 26px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .04em;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(30px, 5.4vw, 44px);
+    line-height: 1.25;
+    margin: 8px 0 2px;
+  }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  .intro { max-width: 640px; margin-top: 16px; }
+  .frame {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 18px;
+    letter-spacing: .02em;
+  }
+  .frame b { color: var(--ink); font-weight: 500; }
+
+  /* ── Colab 안내 ──────────────────────────── */
+  .howto {
+    background: var(--blue-b);
+    border: 1px solid var(--blue-a);
+    border-radius: 6px;
+    margin: 26px 0 0;
+    padding: 16px 18px;
+  }
+  .howto ol { list-style: none; counter-reset: step; }
+  .howto li {
+    counter-increment: step;
+    padding-left: 30px;
+    position: relative;
+    margin: 4px 0;
+  }
+  .howto li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 3px;
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--blue);
+    border-radius: 50%;
+    color: var(--blue);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 18px;
+    text-align: center;
+  }
+  .howto kbd {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    background: var(--surf);
+    border: 1px solid var(--grid);
+    border-radius: 4px;
+    padding: 0 5px;
+  }
+
+  /* ── 절 제목 ─────────────────────────────── */
+  section { padding: 34px 0 8px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 22px;
+  }
+  .sec-note { color: var(--muted); font-size: 13px; }
+
+  /* ── 주차 대장(docket) ────────────────────── */
+  .docket { list-style: none; margin-top: 14px; border-top: 1px solid var(--ink); }
+  .week {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) 208px;
+    gap: 0 18px;
+    padding: 16px 6px 17px 0;
+    border-bottom: 1px solid var(--grid);
+  }
+  .week:hover { background: #f7f7f4; }
+  .week.now { border-left: 3px solid var(--amber); padding-left: 8px; margin-left: -11px; }
+  .wnum {
+    font-family: var(--mono);
+    font-size: 21px;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+  .week.now .wnum { color: var(--ink); }
+  .now-tag {
+    display: none;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--amber);
+    letter-spacing: .05em;
+  }
+  .week.now .now-tag { display: block; }
+  .wtopic { font-weight: 700; font-size: 15px; }
+  .wq {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 16.5px;
+    line-height: 1.55;
+    margin: 3px 0 4px;
+    max-width: 560px;
+  }
+  .wtheory {
+    font-size: 13px;
+    color: var(--ink);
+    margin: 5px 0 4px;
+    max-width: 560px;
+  }
+  .wtheory b {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: .04em;
+    margin-right: 7px;
+  }
+  .wdata {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .wdesc { color: var(--muted); font-size: 13.5px; margin-top: 3px; max-width: 560px; }
+  .wacts { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding-top: 3px; }
+  .nb-links { display: flex; gap: 6px; flex-wrap: wrap; }
+  .nb {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    background: var(--blue-b);
+    border: 1px solid var(--blue-a);
+    border-radius: 999px;
+    padding: 3px 13px;
+    white-space: nowrap;
+  }
+  .nb:hover { background: var(--blue-a); text-decoration: none; }
+  .nb.doc { color: var(--ink); background: var(--surf); border-color: var(--grid); }
+  .nb.doc:hover { background: #f0f0ec; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    border-radius: 3px;
+    padding: 1px 7px;
+    white-space: nowrap;
+  }
+  .badge.hw-out { color: #8a5f00; border: 1px solid var(--amber); }
+  .badge.hw-due { color: var(--red); border: 1px solid var(--red); }
+  a.badge:hover { text-decoration: none; filter: brightness(.85); }
+  .week.exam { background: #f5f5f2; }
+  .week.exam .wq { color: var(--ink); }
+  .exam-mark {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 3px;
+    padding: 1px 7px;
+    display: inline-block;
+  }
+
+  /* ── 과제(HW) ────────────────────────────── */
+  .hw-list { list-style: none; margin-top: 14px; border-top: 1px solid var(--ink); }
+  .hw {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) 208px;
+    gap: 0 18px;
+    padding: 14px 6px 15px 0;
+    border-bottom: 1px solid var(--grid);
+  }
+  .hw:hover { background: #f7f7f4; }
+  .hwnum { font-family: var(--mono); font-size: 17px; color: var(--amber); padding-top: 2px; }
+  .hwtitle { font-weight: 700; }
+  .hwmeta { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .hwdesc { color: var(--muted); font-size: 13.5px; margin-top: 3px; max-width: 560px; }
+  .hw .wacts { padding-top: 4px; }
+  .hw-note { color: var(--muted); font-size: 13px; margin-top: 12px; max-width: 640px; }
+
+  /* ── 평가 ───────────────────────────────── */
+  .grading { margin-top: 14px; border-top: 1px solid var(--ink); }
+  .grading table { border-collapse: collapse; width: 100%; max-width: 560px; }
+  .grading td { border-bottom: 1px solid var(--grid); padding: 8px 2px; }
+  .grading td.w {
+    font-family: var(--mono);
+    font-size: 14px;
+    text-align: right;
+    width: 64px;
+    padding-right: 14px;
+  }
+  .grading td.what { font-size: 14px; }
+  .grading td.how { color: var(--muted); font-size: 13px; }
+
+  footer {
+    margin-top: 44px;
+    border-top: 1px solid var(--ink);
+    padding: 18px 0 40px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 720px) {
+    .week, .hw { grid-template-columns: 44px minmax(0, 1fr); }
+    .wacts { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; margin-top: 9px; }
+    .wnum { font-size: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+
+  /* ── 탭 ─────────────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--ink);
+    margin-top: 30px;
+  }
+  .tab {
+    appearance: none;
+    background: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 18px 8px;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--ink); background: #f7f7f4; }
+  .tab[aria-selected="true"] {
+    color: var(--ink);
+    background: var(--surf);
+    border-color: var(--ink);
+    border-bottom: 1px solid var(--surf);
+  }
+  [hidden] { display: none !important; }
+
+  /* ── 오리엔테이션 ─────────────────────────── */
+  .ori { padding-top: 30px; }
+  .ori h3 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 30px 0 10px;
+  }
+  .ori h3:first-child { margin-top: 0; }
+  .ori p { max-width: 660px; margin-bottom: 10px; }
+  .ori ul { margin: 0 0 10px 18px; max-width: 660px; }
+  .ori li { margin: 4px 0; }
+  .ori table { border-collapse: collapse; width: 100%; max-width: 680px; margin: 6px 0 4px; }
+  .ori th, .ori td {
+    border-bottom: 1px solid var(--grid);
+    padding: 7px 10px 7px 0;
+    text-align: left;
+    font-size: 14px;
+    vertical-align: top;
+  }
+  .ori th { color: var(--muted); font-weight: 500; font-size: 12.5px; font-family: var(--mono); }
+  .ori td.n { font-family: var(--mono); white-space: nowrap; color: var(--muted); }
+  .rhythm {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    max-width: 680px;
+    margin: 8px 0 4px;
+  }
+  .rhythm div {
+    border: 1px solid var(--grid);
+    border-radius: 5px;
+    padding: 12px 14px;
+    background: #fbfbf9;
+  }
+  .rhythm b { display: block; font-size: 14px; }
+  .rhythm span { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .rhythm p { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  @media (max-width: 720px) {
+    .rhythm { grid-template-columns: 1fr; }
+  }
+  .soon { font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--grid); border-radius: 3px; padding: 1px 7px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">부경대학교 시스템경영공학부 · 2026 · BALAB</p>
+    <h1>비즈니스 애널리틱스</h1>
+    <p class="subtitle">Business Analytics · 학부 4학년 · 이론+실습</p>
+    <p class="intro">실제 산업 데이터를 분석해 경영진이 실행할 수 있는 의사결정 권고안을 만드는 과목이다.
+      모든 주차는 하나의 의사결정 질문에서 시작해 권고안으로 끝난다.</p>
+    <p class="frame">질문 <b>→</b> 데이터 <b>→</b> 분석 <b>→</b> 결정 <b>→</b> 가치</p>
+
+    <div class="howto">
+      <ol>
+        <li>아래 표에서 노트북을 누르면 <b>Google Colab</b>에서 바로 열린다. 로컬 설치는 필요 없다. <b>이론</b> 버튼은 그 주의 배경이론 문서(웹 페이지)를 연다.</li>
+        <li>첫 셀을 실행하면 데이터와 공용 코드(balab)가 자동으로 준비된다.</li>
+        <li>수정·제출하려면 <kbd>파일 → Drive에 사본 저장</kbd> 뒤 사본에서 작업한다.</li>
+      </ol>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-ori" aria-controls="panel-ori" aria-selected="false">과목 안내</button>
+      <button class="tab" role="tab" id="tab-course" aria-controls="panel-course" aria-selected="true">주차별 진행</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="ori" id="panel-ori" role="tabpanel" aria-labelledby="tab-ori" hidden>
+
+    <h3>이 과목이 다루는 것</h3>
+    <p>비즈니스 애널리틱스는 데이터 분석을 실제 기업의 의사결정에 적용하는 분야다. 이 과목에서
+      학생은 산업공학에서 배운 도구(통계적 검정, 회귀분석, 군집, 분류, 수요예측, 재고관리,
+      품질관리, 최적화, 인과추론)를 실제 산업 데이터에 직접 코드로 적용하고, 그 결과를 경영진이
+      실행에 옮길 수 있는 의사결정 권고안으로 완성하는 훈련을 반복한다.</p>
+    <p>분석의 성패는 모델의 정확도가 아니라 그것이 뒷받침한 결정이 낳는 비용과 가치로 판단한다.
+      매주 노트북은 "분석했다"가 아니라 하나의 의사결정 질문으로 끝난다.</p>
+
+    <h3>전공 과목과의 연결</h3>
+    <p>새 이론을 처음부터 배우는 자리가 아니라, 이미 배운 도구를 실데이터에 적용해 결정으로
+      옮기는 자리다. 매주 노트북 도입부에 그 주의 도구가 어느 전공 과목에서 온 것인지 밝힌다.</p>
+    <table>
+      <tr><th>주</th><th>배운 곳</th><th>이 과목의 결정</th></tr>
+      <tr><td class="n">1</td><td>통계학·실험계획법 (가설검정·분산분석)</td><td>A/B 실험으로 게임 기능을 확정한다</td></tr>
+      <tr><td class="n">2</td><td>재고·생산관리 (ABC 분석), 품질관리 (파레토도)</td><td>어떤 품목을 단종할지 정한다</td></tr>
+      <tr><td class="n">3</td><td>경영정보시스템 (관계형 DB), 물류관리 (리드타임)</td><td>배송 약속일의 버퍼를 정한다</td></tr>
+      <tr><td class="n">4</td><td>통계학 (회귀분석), 실험계획법 (블록화)</td><td>날씨에 따른 운영 인력 규모를 정한다</td></tr>
+      <tr><td class="n">5</td><td>다변량통계 (군집분석)</td><td>고객 유형별 대응 전략을 정한다</td></tr>
+      <tr><td class="n">6</td><td>품질경영 (검사 설계·오류비용)</td><td>정비 대상 선별 기준을 정한다</td></tr>
+      <tr><td class="n">7·9</td><td>생산계획 (수요예측), 재고관리론 (뉴스벤더·안전재고)</td><td>발주량과 재고 정책을 정한다</td></tr>
+      <tr><td class="n">10</td><td>품질관리 (관리도·공정능력)</td><td>공정 운전 조건을 재설정한다</td></tr>
+      <tr><td class="n">11·12</td><td>OR (선형계획·휴리스틱)</td><td>창고 폐쇄와 배송 경로를 정한다</td></tr>
+      <tr><td class="n">13</td><td>실험계획법 (무작위화), 인과추론</td><td>캠페인 예산의 타겟을 정한다</td></tr>
+    </table>
+
+    <h3>매주 3시간의 진행</h3>
+    <div class="rhythm">
+      <div><b>강의</b><span>90분</span><p>의사결정 질문 → 데이터 확인(EDA) → 이론 → 분석 → 권고. 교재판을 함께 실행한다.</p></div>
+      <div><b>실습(랩)</b><span>50~60분</span><p>그 주 계산을 빈칸 워크시트로 재현한다. <b>수업 내 완료가 원칙</b>이며 마지막 셀이 완료를 확인한다.</p></div>
+      <div><b>정리·토론</b><span>30분</span><p>생각해보기 문항으로 결정의 근거와 한계를 논의하고 다음 주를 예고한다.</p></div>
+    </div>
+    <p>실습은 Google Colab에서 진행하며 별도 설치가 필요 없다. 사용하는 데이터는 전부 실제 산업
+      데이터이고 합성 데이터는 쓰지 않는다.</p>
+
+    <h3>학기 일정</h3>
+    <table>
+      <tr><th>주</th><th>내용</th><th>랩</th></tr>
+      <tr><td class="n">1~3</td><td>의사결정 틀과 검정 · 파레토/ABC · 조인과 KPI</td><td>매주 랩 제출</td></tr>
+      <tr><td class="n">4~5</td><td>회귀와 통제 · 고객 세분화</td><td>매주 랩 제출</td></tr>
+      <tr><td class="n">6~7</td><td>비용 기반 임계값 · 수요예측</td><td>매주 랩 제출</td></tr>
+      <tr><td class="n">8</td><td><b>중간고사</b> (의사결정형 구술)</td><td>랩 없음</td></tr>
+      <tr><td class="n">9~10</td><td>재고 결정 · 통계적 공정관리</td><td>매주 랩 제출</td></tr>
+      <tr><td class="n">11~13</td><td>최적화 I·II · 인과추론과 업리프트</td><td>매주 랩 제출</td></tr>
+      <tr><td class="n">14</td><td>기말 케이스 배포 · 분석 설계 클리닉</td><td>랩 없음</td></tr>
+      <tr><td class="n">15</td><td><b>기말 구술 방어</b> (지정 케이스 5분 개별)</td><td>—</td></tr>
+    </table>
+
+    <h3>평가</h3>
+    <table>
+      <tr><th>항목</th><th>비중</th><th>내용</th></tr>
+      <tr><td>주차별 랩</td><td class="n">55%</td><td>매주 실습 제출. 강의와 다른 실데이터에 그 주 기법을 적용한다. 최저 2회는 성적에서 제외</td></tr>
+      <tr><td>기말 구술 방어</td><td class="n">30%</td><td>15주차. 교수 지정 실데이터·결정 질문의 개별 분석을 5분 구술로 방어</td></tr>
+      <tr><td>중간 구술</td><td class="n">15%</td><td>8주차. 1~7주 기법의 의사결정형 문항. 예시 문항 사전 공개</td></tr>
+    </table>
+    <p>랩은 모두 개인 제출이며 팀 프로젝트는 없다. 유연성 장치로 슬립데이 4일(랩 마감에 자유
+      배분, 사유 불문)과 최저 2회 드롭을 둔다.</p>
+
+    <h3>예상 학습 부담</h3>
+    <ul>
+      <li><b>수업 시간</b> 주 3시간 — 랩은 수업 안에서 끝내는 것이 원칙이다.</li>
+      <li><b>수업 밖</b> 주 2~4시간 — 랩을 수업 안에 끝내지 못한 주는 더 걸린다.</li>
+      <li><b>구술 준비</b> 중간·기말 각 3~5시간. 제출물을 스스로 이해하고 방어할 수 있어야 한다.</li>
+    </ul>
+    <p>코딩 경험이 많지 않아도 따라올 수 있도록 매주 노트북에 실행되는 코드와 빈칸 워크시트를
+      함께 제공한다. 다만 pandas 기본 조작은 1~2주차에 집중되므로 이 시기의 실습을 빠뜨리지
+      않는 것이 중요하다.</p>
+
+    <h3>학습 자료</h3>
+    <p>주교재는 자체 제작 자료다. 주차마다 <b>교재</b>(그 주의 전체 노트북 — 수업에서 함께 읽고
+      실행하며, 복습도 같은 파일로 한다)와 <b>랩</b>(실습 워크시트)을 제공하며, 모두 Colab에서
+      바로 열린다. 교재(노트북)에는 이론을 싣지 않고, 정의·수식·유도·연습문제는 주차별 <b>배경이론
+      문서</b>(웹 페이지)로 따로 둔다. 수업 전에 그 문서를 한 번 읽어 두면 노트북의 분석 코드가
+      왜 그렇게 생겼는지 보인다.
+      보조 참고자료는 Provost &amp; Fawcett의 <i>Data Science for Business</i>, Knaflic의
+      <i>Storytelling with Data</i>, 그리고 pandas·scikit-learn·statsmodels·PuLP 공식 문서다.</p>
+
+  </section>
+
+  <section id="panel-course" role="tabpanel" aria-labelledby="tab-course">
+
+  <section id="weeks">
+    <div class="sec-head">
+      <h2>주차별 진행</h2>
+      <p class="sec-note">각 주차는 데이터와 탐색으로 시작해 문제를 세우고, 그 문제를 풀 지표를 데이터로 고른 뒤 분석과 권고로 끝난다. 교재 = 수업 중 교수와 함께 코드를 채워 가는 노트북 · 이론 = 교재가 가리키는 <b>배경이론 문서</b>(정의·수식·유도·연습문제, 수업 전 읽기 — 노트북에는 이론을 싣지 않는다) · 랩 = <b>강의와 다른 실데이터</b>에 그 주 기법을 적용하는 개인 제출 과제(성적 55%).</p>
+    </div>
+
+    <ol class="docket">
+
+      <li class="week" id="week-1">
+        <div class="wnum">01<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">A/B 검정으로 결정하기</p>
+          <p class="wq">게임의 게이트를 레벨 30에 유지할까, 레벨 40으로 옮길까?</p>
+          <p class="wtheory"><b>이론</b>가설검정(2표본 비율검정) · p-value와 신뢰구간 · 효과의 금액 환산 · <a href="theory/week01.html">배경이론 문서 →</a></p>
+          <p class="wdata">Cookie Cats · 90,189 유저<br>랩: Upworthy 헤드라인 실험 22,743건</p>
+        </div>
+        <div class="wacts">
+          <div class="nb-links">
+            <a class="nb" href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week01_ab_test.ipynb">교재</a>
+            <a class="nb" href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/labs/week01_lab.ipynb">랩</a>
+            <a class="nb doc" href="theory/week01.html">이론</a>
+          </div>
+        </div>
+      </li>
+      <li class="week" id="week-2">
+        <div class="wnum">02<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">약속 배송일을 며칠로 잡을 것인가</p>
+          <p class="wq">약속 배송일에 버퍼를 며칠 둘 것인가?</p>
+          <p class="wtheory"><b>이론</b>그레인과 조인 · 1:N 행 팽창 · 리드타임 분해 · 분위수 $Q(p)$와 지연율</p>
+          <p class="wdata">Olist 브라질 이커머스 · 주문 99,441건</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-3">
+        <div class="wnum">03<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">상태 기반 정비: 언제 교체할 것인가</p>
+          <p class="wq">고장 후·주기·상태 기반 교체 중 무엇을 택할 것인가?</p>
+          <p class="wtheory"><b>이론</b>위험률과 욕조곡선 · 노출량 기반 연간고장률 · 예방정비의 조건 C<sub>f</sub>/C<sub>p</sub> &gt; n/m</p>
+          <p class="wdata">Backblaze 데이터센터 2026Q1 · 6만 대 522만 행<br>랩: 같은 센터 2020Q1 함대</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-4">
+        <div class="wnum">04<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">품질과 변동: 운전 조건 재설정</p>
+          <p class="wq">공정 운전창을 어떻게 재설정할 것인가?</p>
+          <p class="wtheory"><b>이론</b>관리도 ±3σ · 자기상관과 batch-means · 공정능력 C<sub>pk</sub></p>
+          <p class="wdata">광산 부유선별 실공정 · 시간 단위 4,097행</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-5">
+        <div class="wnum">05<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">비용 기반 분류와 임계값</p>
+          <p class="wq">어떤 트럭을 정비소로 보낼 것인가?</p>
+          <p class="wtheory"><b>이론</b>혼동·비용행렬 · ROC/AUC · 최적 임계값 c<sub>FP</sub>/(c<sub>FP</sub>+c<sub>FN</sub>)</p>
+          <p class="wdata">Scania APS 트럭 6만 대</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-6">
+        <div class="wnum">06<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">회귀분석: 통제와 의사결정</p>
+          <p class="wq">비 예보일에 재배치 트럭을 몇 팀 보낼 것인가?</p>
+          <p class="wtheory"><b>이론</b>OLS와 한계효과 · 교란 통제 · Frisch–Waugh · 외생성</p>
+          <p class="wdata">서울 따릉이 · 방글라데시 봉제공장</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-7">
+        <div class="wnum">07<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">몇 명을 둘 것인가: 대기와 변동</p>
+          <p class="wq">시간대별로 상담원을 몇 명 배치할 것인가?</p>
+          <p class="wtheory"><b>이론</b>Little의 법칙 L=λW · 이용률 ρ=λ/(cμ) · M/M/c와 Erlang C · 서비스 수준</p>
+          <p class="wdata">이스라엘 은행 콜센터 1999 · 통화 44.4만 건<br>랩: 대출 심사 프로세스 로그 120만 이벤트</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week exam" id="week-8">
+        <div class="wnum">08<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">중간고사</p>
+          <p class="wq">구술 시험: 1~7주 기법의 의사결정형 문항. 예시 문항은 4주차까지 공개한다.</p>
+        </div>
+        <div class="wacts">
+          <span class="exam-mark">구술</span>
+        </div>
+      </li>
+      <li class="week" id="week-9">
+        <div class="wnum">09<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">최적화 I: 네트워크 선형계획</p>
+          <p class="wq">어느 창고를 닫을 것인가?</p>
+          <p class="wtheory"><b>이론</b>LP 표준형 · 쌍대성과 잠재가격 · 폐쇄 실험</p>
+          <p class="wdata">글로벌 물류망 · 주문 9,215건 · 창고 19개</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-10">
+        <div class="wnum">10<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">수요예측: 노력을 어디에 배분할 것인가</p>
+          <p class="wq">300개 품목 가운데 몇 개에 사람이 붙을 것인가?</p>
+          <p class="wtheory"><b>이론</b>시계열 분해 · ADI–CV² 간헐 수요 분류 · MAE와 오차 분포 · 개선 여지의 누적 회수</p>
+          <p class="wdata">M5 Walmart CA_1 · 품목 300개</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-11">
+        <div class="wnum">11<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">예측에서 재고 결정으로</p>
+          <p class="wq">얼마나 쌓아둘 것인가?</p>
+          <p class="wtheory"><b>이론</b>안전재고 zσ√LT · (s,S) 정책 · 뉴스벤더 임계비</p>
+          <p class="wdata">M5 Walmart CA_1 · 품목 300개</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-12">
+        <div class="wnum">12<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">상관이 아니라 인과: 업리프트</p>
+          <p class="wq">광고 '때문에' 반응할 사람은 누구인가?</p>
+          <p class="wtheory"><b>이론</b>잠재적 결과 · ATE와 교란 · T-learner · Qini 곡선</p>
+          <p class="wdata">Criteo 광고 RCT · 1,398만 건</p>
+        </div>
+        <div class="wacts">
+          <span class="soon">준비 중</span>
+        </div>
+      </li>
+      <li class="week" id="week-13">
+        <div class="wnum">13<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">주제 개편 중</p>
+          <p class="wq">확정되면 이 자리에 올라간다.</p>
+        </div>
+        <div class="wacts"></div>
+      </li>
+      <li class="week exam" id="week-14">
+        <div class="wnum">14<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">기말 방어 케이스 (개별)</p>
+          <p class="wq">지정 케이스를 개별 분석한다. 랩은 데이터 확보·정제와 분석 설계를 돕는 클리닉으로 진행한다.</p>
+          <p class="wdata">교수 지정 실데이터 · 14주차 배포</p>
+        </div>
+        <div class="wacts">
+          <span class="exam-mark">케이스</span>
+        </div>
+      </li>
+      <li class="week exam" id="week-15">
+        <div class="wnum">15<span class="now-tag">이번 주</span></div>
+        <div>
+          <p class="wtopic">기말 구술 방어: 결정 케이스</p>
+          <p class="wq">지정 케이스의 결정 질문·권고안·근거를 5분 구술로 방어한다.</p>
+        </div>
+        <div class="wacts">
+          <span class="exam-mark">구술</span>
+        </div>
+      </li>
+
+    </ol>
+  </section>
+
+
+  <section id="grading">
+    <div class="sec-head">
+      <h2>평가</h2>
+    </div>
+    <div class="grading">
+      <table>
+        <tr><td class="w">55%</td><td class="what">주차별 랩</td><td class="how">강의와 다른 데이터에 그 주 기법 적용 · 최저 2회 제외</td></tr>
+        <tr><td class="w">30%</td><td class="what">기말 구술 방어</td><td class="how">15주차 · 지정 케이스 5분 방어</td></tr>
+        <tr><td class="w">15%</td><td class="what">중간 구술</td><td class="how">8주차 · 의사결정형 문항</td></tr>
+      </table>
+    </div>
+  </section>
+
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+    <span>BALAB · 부경대학교 시스템경영공학부</span>
+    <span>
+      <a href="https://github.com/BALAB-PKNU/bizanalytics">자료 저장소</a> ·
+      <a href="https://github.com/BALAB-PKNU/bizanalytics-data">데이터 미러</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+  // 탭 전환 — 과목 안내 / 주차별 진행
+  (function () {
+    var tabs = [
+      {btn: document.getElementById("tab-ori"), panel: document.getElementById("panel-ori")},
+      {btn: document.getElementById("tab-course"), panel: document.getElementById("panel-course")},
+    ];
+    function select(name) {
+      tabs.forEach(function (t) {
+        var on = t.btn.id === "tab-" + name;
+        t.btn.setAttribute("aria-selected", on ? "true" : "false");
+        t.panel.hidden = !on;
+      });
+      if (history.replaceState) history.replaceState(null, "", name === "ori" ? "#안내" : "#주차");
+    }
+    tabs.forEach(function (t) {
+      t.btn.addEventListener("click", function () { select(t.btn.id.slice(4)); });
+    });
+    if (decodeURIComponent(location.hash) === "#안내") select("ori");
+  })();
+</script>
+
+<script>
+  // 이번 주 표시. 개강일이 다르면 이 날짜만 고친다 (그 주의 아무 날이어도 된다).
+  var SEMESTER_START = "2026-09-01";
+  (function () {
+    var start = new Date(SEMESTER_START + "T00:00:00");
+    if (isNaN(start)) return;
+    var monday = new Date(start);
+    monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));   // 그 주 월요일로
+    var week = Math.floor((Date.now() - monday.getTime()) / (7 * 24 * 3600 * 1000)) + 1;
+    var row = document.getElementById("week-" + week);
+    if (row) row.classList.add("now");
+  })();
+</script>
+
+</body>
+</html>
