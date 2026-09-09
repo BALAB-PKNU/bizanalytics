@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2주차 배경이론 — 관계형 데이터와 단위 · 비즈니스 애널리틱스 2026</title>
+<meta name="description" content="2주차 교재의 배경이론 전문. 기본키·외래키·단위·카디널리티, 조인의 종류와 행 수, 단위 불일치와 가중평균, 날짜 계산과 소요일, 분위수와 서비스 수준, 연습문제.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+  :root {
+    --surf: #fcfcfb; --ink: #0b0b0b; --muted: #898781; --grid: #e1e0d9;
+    --blue: #2a78d6; --blue-a: #cde2fb; --blue-b: #e7f0fb; --amber: #eda100; --red: #e34948;
+    --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --serif: "Noto Serif KR", "Apple Myungjo", serif;
+    --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--surf); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.75; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  header { border-bottom: 1px solid var(--ink); padding: 40px 0 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+  .eyebrow a { color: var(--muted); }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 4.6vw, 36px); line-height: 1.3; margin: 8px 0 4px; }
+  .lede { color: var(--muted); font-size: 14px; }
+  .where { background: var(--blue-b); border: 1px solid var(--blue-a); border-radius: 6px; padding: 14px 18px; margin: 22px 0 0; font-size: 14px; }
+  nav.toc { margin: 26px 0 0; font-size: 14px; }
+  nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+  nav.toc li { margin: 2px 0; break-inside: avoid; }
+  nav.toc li span { font-family: var(--mono); color: var(--muted); font-size: 12px; margin-right: 6px; }
+  main { padding: 10px 0 40px; }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: 21px; margin: 40px 0 10px; padding-top: 6px; }
+  h2 span { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-right: 10px; font-weight: 500; }
+  h3 { font-size: 15.5px; font-weight: 700; margin: 22px 0 6px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px 22px; }
+  li { margin: 3px 0; }
+  code { font-family: var(--mono); font-size: 13px; background: #f3f3f0; border-radius: 3px; padding: 1px 5px; }
+  pre { font-family: var(--mono); font-size: 13px; background: #f3f3f0; border-radius: 5px; padding: 12px 14px; overflow-x: auto; margin: 0 0 14px; line-height: 1.55; }
+  .def { border-left: 3px solid var(--blue); padding: 6px 14px; margin: 12px 0 14px; background: #fbfbf9; }
+  .def b { color: var(--blue); }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 16px; font-size: 14px; }
+  th, td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12.5px; font-family: var(--mono); }
+  .katex-display { margin: 10px 0 14px; overflow-x: auto; overflow-y: hidden; }
+  .note { color: var(--muted); font-size: 13.5px; }
+  footer { border-top: 1px solid var(--ink); padding: 18px 0 40px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow"><a href="../">비즈니스 애널리틱스 2026</a> · 배경이론 · 2주차</p>
+    <h1>관계형 데이터와 단위 — 약속 배송일을 며칠로 잡을 것인가</h1>
+    <p class="lede">교재의 배경이론 전문. 키와 단위 · 조인의 종류와 행 수 · 단위 불일치와 두 종류의 평균 · 날짜 계산과 소요일 · 분위수와 서비스 수준 · 연습문제</p>
+    <div class="where">
+      이 문서는 2주차 교재(Colab 노트북)가 가리키는 배경이론이다. 노트북에는 이론을 싣지 않고 적용만 한다. 교재 5~9절에서
+      여러 테이블을 붙이고, 소요일을 계산하고, 약속일을 분위수로 정하는 절차가 어떤 논리 위에
+      서 있는지를 정의와 수식으로 정리한다. 경영정보시스템에서 배운 관계형 데이터베이스와 물류관리의
+      리드타임을 이 과목의 데이터(Olist 주문 기록)에 맞춰 다시 세운 것이며 새로 배우는 이론은 없다.
+    </div>
+    <nav class="toc">
+      <ol>
+        <li><span>1</span><a href="#s1">관계형 스키마 — 키와 단위</a></li>
+        <li><span>2</span><a href="#s2">조인의 종류</a></li>
+        <li><span>3</span><a href="#s3">조인 결과의 행 수</a></li>
+        <li><span>4</span><a href="#s4">단위 불일치와 두 종류의 평균</a></li>
+        <li><span>5</span><a href="#s5">날짜 계산과 소요일</a></li>
+        <li><span>6</span><a href="#s6">분위수와 서비스 수준</a></li>
+        <li><span>7</span><a href="#s7">이 도구가 답하지 않는 것</a></li>
+        <li><span>8</span><a href="#s8">산업공학에서 배운 것과의 연결</a></li>
+        <li><span>9</span><a href="#s9">연습문제</a></li>
+        <li><span>부록</span><a href="#appx">교재에서 쓰는 함수</a></li>
+      </ol>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<h2 id="s1"><span>1</span>관계형 스키마 — 키와 단위</h2>
+<p>운영 시스템의 기록은 하나의 큰 표가 아니라 테이블 여러 개다. 주문의 상태와 시각은 주문 테이블에,
+그 주문에 담긴 상품과 금액은 명세 테이블에, 배송지는 고객 테이블에 나뉘어 있다. 같은 사실을 한 곳에만
+두는 이 설계가 정규화이고, 흩어진 정보를 다시 모으는 연산이 조인이다.</p>
+<div class="def"><b>정의</b>: 기본키(primary key, PK) — 테이블의 한 행을 유일하게 식별하는 열 또는 열의 조합. 중복과 결측이 없어야 한다.</div>
+<div class="def"><b>정의</b>: 외래키(foreign key, FK) — 다른 테이블의 기본키를 가리키는 열. 두 테이블의 관계는 이 열로 표현된다.</div>
+<div class="def"><b>정의</b>: 정규화(normalization) — 같은 사실을 한 곳에만 저장하도록 테이블을 나누는 설계 원칙. 같은 사실이
+여러 행에 흩어져 일부만 수정되는 갱신 이상을 막는 대신, 분석에 필요한 정보가 여러 테이블에 나뉜다.</div>
+<div class="def"><b>정의</b>: 단위(grain) — 테이블의 한 행이 나타내는 대상. 주문 단위, 아이템 단위처럼 "한 행 = 무엇"으로 읽는다.
+그레인이라는 표기도 함께 쓴다.</div>
+<div class="def"><b>정의</b>: 카디널리티(cardinality) — 두 테이블을 키로 맞출 때 한쪽의 한 행이 다른 쪽의 몇 행과 대응하는지를
+나타내는 관계. 1:1, 1:N, N:M으로 쓴다.</div>
+<p>카디널리티는 두 테이블의 단위 관계를 옮긴 것이고, 조인 결과의 단위는 더 세밀한 쪽을 따라간다 — 주문 단위
+테이블에 아이템 단위 테이블을 붙이면 결과는 아이템 단위가 된다. Olist에서는 다음과 같다.</p>
+<table>
+  <tr><th>관계</th><th>카디널리티</th><th>의미</th></tr>
+  <tr><td>customers ↔ orders</td><td><b>1 : 1</b></td><td>주문마다 <code>customer_id</code>가 고유(설명서) — 사실상 주문 테이블의 확장</td></tr>
+  <tr><td>orders ↔ order_items</td><td><b>1 : N</b></td><td>주문 하나에 아이템 여러 개 — 조인하면 행이 늘어난다</td></tr>
+  <tr><td>orders ↔ order_reviews</td><td><b>1 : N</b></td><td>한 주문에 리뷰가 둘 이상일 수 있다 — 붙이기 전에 주문 단위로 중복 제거</td></tr>
+</table>
+<p><b>키 이름이 곧 그 뜻은 아니다.</b> Olist의 <code>customer_id</code>는 설명서에 "주문마다 고유"라고 적혀 있고, 사람 단위의
+식별자는 <code>customer_unique_id</code>다. <code>customer_id</code>로 "고객 수"를 세면 주문 수를 세게 된다. 새 테이블을 받으면
+열 이름을 믿지 말고 설명서를 보고, 설명서가 맞는지 고유값 수로 확인한다.</p>
+<p><b>1:1의 확인.</b> 두 테이블의 행 수가 같다는 것은 1:1의 근거가 아니다. 행 수가 같아도 키가 어긋날 수 있고, 행 수가
+달라도 1:1일 수 있다. 양쪽 키의 중복과 결측을 확인한다. 두 표의 모든 행이 빠짐없이 1:1로 대응하려면 두 키
+집합도 같아야 한다(<code>isin().all()</code> 양방향). 한쪽의 고유값 수가 행 수와 같다는 것은 사람마다 한 행인 보통의 고객 테이블도
+통과하는 검사라, 그 표의 한 행이 사람인지 주문인지는 사람 단위 식별자의 고유값 수를 따로 세어 본다.</p>
+
+<h2 id="s2"><span>2</span>조인의 종류</h2>
+<p>조인은 두 테이블을 공통 키로 맞춰 옆으로 붙이는 연산이다. 종류는 어느 쪽 행을 남기느냐로 갈린다.</p>
+<table>
+  <tr><th>종류</th><th>pandas</th><th>남는 행</th></tr>
+  <tr><td>INNER</td><td><code>how="inner"</code></td><td>양쪽 모두에 키가 있는 행만</td></tr>
+  <tr><td>LEFT</td><td><code>how="left"</code></td><td>왼쪽 전부 + 오른쪽 매칭 (가장 흔함)</td></tr>
+  <tr><td>RIGHT</td><td><code>how="right"</code></td><td>오른쪽 전부 + 왼쪽 매칭</td></tr>
+  <tr><td>OUTER</td><td><code>how="outer"</code></td><td>양쪽 전부</td></tr>
+</table>
+<p><b>INNER 조인은 조인이자 동시에 필터다.</b> 오른쪽에 짝이 없는 왼쪽 행이 사라지므로, 사라진 행이 무작위가
+아니면 분석 대상이 달라진다. 리뷰 표를 INNER 조인하면 리뷰 없는 주문이 제외된다.
+리뷰를 남긴 주문의 별점만으로 전체 주문의 만족도를 판단하려면 리뷰 작성 여부와 만족도의 관계를 확인해야 한다. 종류보다 더 중요한 습관은 조인 전후로 행 수를 확인하는 것이다. 오른쪽 키가 고유한 LEFT 조인이면 행 수가 그대로여야 하고,
+1:N이면 늘어난 만큼이 설명되어야 한다.</p>
+
+<h2 id="s3"><span>3</span>조인 결과의 행 수</h2>
+<p>카디널리티를 알면 조인 결과의 행 수를 미리 계산할 수 있다. 키 값 $j$에 대해 왼쪽 테이블에 $l_j$행, 오른쪽
+테이블에 $m_j$행이 있으면 그 키에서 만들어지는 조합은 $l_j \times m_j$개이고, 결과 전체는 키마다의 곱을 더한
+값이다($\bowtie$는 조인을 뜻하는 관계대수 기호다).</p>
+$$\lvert L \bowtie R \rvert = \sum_{j} l_j \, m_j$$
+<ul>
+  <li><b>1:1</b> — 모든 키에서 $l_j = m_j = 1$이므로 행 수가 보존된다.</li>
+  <li><b>1:N</b> — 왼쪽이 $l_j = 1$, 오른쪽이 $m_j = n_j$이므로 결과는 $\sum_j n_j$가 되고, 왼쪽 행 수 $J$보다
+    $\sum_j (n_j - 1)$만큼 늘어난다.</li>
+  <li><b>LEFT 조인</b> — 오른쪽에 짝이 없는 키($n_j = 0$)도 결측을 채워 한 행으로 남으므로 결과는
+    $\sum_j \max(n_j, 1)$이다.</li>
+</ul>
+<p>Olist에서 orders(99,441행)에 order_items(112,650행)를 LEFT 조인하면 113,425행이 된다. 아이템이 한 줄도 없는
+주문 775건이 결측 행으로 남아 $112{,}650 + 775 = 113{,}425$이고, 팽창분은 아이템이 있는 주문 98,666건에 대해
+$\sum_j (n_j - 1) = 112{,}650 - 98{,}666 = 13{,}984$다. 행이 늘어나는 것은 사고가 아니라 카디널리티가 정한
+결과다. 조인 전에 이 값을 계산해 두면 결과 행 수가 예상과 다를 때 무엇이 어긋났는지 곧바로 알 수 있다.</p>
+
+<h2 id="s4"><span>4</span>단위 불일치와 두 종류의 평균</h2>
+<p>단위가 바뀐 테이블에서 원래 단위의 지표를 계산하면 같은 주문의 값이 여러 번 집계될 수 있다. 주문 $j$의 값을 $x_j$, 아이템
+수를 $n_j$, 주문 수를 $J$라 하면 두 평균은 다음과 같다.</p>
+$$\bar{x}_{\text{행}} = \frac{\sum_j n_j x_j}{\sum_j n_j}, \qquad \bar{x}_{\text{주문}} = \frac{1}{J}\sum_j x_j$$
+<p>행 단위 평균은 아이템 수를 가중치로 쓰는 <b>가중평균</b>이고, 주문 단위 평균은 <b>단순평균</b>이다. 두 값의
+차이는 가중치와 값의 공분산으로 정리된다.</p>
+$$\bar{x}_{\text{행}} - \bar{x}_{\text{주문}} = \frac{\operatorname{Cov}(n, x)}{\bar{n}}, \qquad \bar{n} = \frac{1}{J}\sum_j n_j$$
+<p>이 식의 공분산은 분모를 $J$로 계산한다. pandas의 표본 공분산처럼 $J-1$로 나눈 값을 그대로 대입하지 않는다.</p>
+<p>표본에서 가중치와 값의 공분산이 0이면 두 평균이 같고, 그렇지 않으면 공분산의 부호 방향으로 벌어진다. 비율도 같은 구조다 —
+0/1 지시변수의 평균이 곧 비율이므로, 단위가 바뀐 테이블에서 센 지연율 역시 다품목 주문 쪽으로 기운
+가중평균이 된다. 결정을 내리는 단위가 무엇인지가 어느 평균을 써야 하는지를 정한다. 배송일은 주문 단위로
+약속하는 값이므로 근거 지표도 주문 단위여야 한다.</p>
+<div class="def"><b>정의</b>: 단위 불일치 편향(grain mismatch bias) — 주문 단위로 정의된 지표를 아이템 단위(팽창) 테이블에서
+계산할 때 생기는 체계적 오차.</div>
+<p>방어 패턴은 <b>집계 먼저, 조인 나중</b>이다. 세밀한 쪽 테이블을 먼저 결정 단위로 축약한 뒤(주문별 아이템
+수·금액 합계) 1:1로 붙이면 행이 팽창하지 않는다.</p>
+
+<h2 id="s5"><span>5</span>날짜로 세는 소요일과 경과 시간</h2>
+<div class="def"><b>정의</b>: 리드타임(lead time) — 주문이 발생한 시점부터 고객이 물건을 받는 시점까지의 경과 시간.</div>
+<p>예상 배송일이 시각 없이 날짜로 안내되어 있다면 같은 날짜에 받은 주문은 약속을 지킨 것이다.
+교재는 구매·수령 시각에서 시각 부분을 자정으로 맞춘 뒤 날짜 차이를 센다. 영업일이 아니라 주말과 공휴일을 포함한 달력상의 소요일이다.</p>
+$$T_j = \operatorname{date}(t^{\mathrm{d}}_j)-\operatorname{date}(t^{\mathrm{p}}_j),\qquad
+A_j = \operatorname{date}(t^{\mathrm{e}}_j)-\operatorname{date}(t^{\mathrm{p}}_j)$$
+<p>여기서 $t^{\mathrm{p}}_j$는 구매 시각, $t^{\mathrm{d}}_j$는 수령 시각, $t^{\mathrm{e}}_j$는 예상 배송일이다.
+실제 소요일 $T_j$가 그 주문의 약속 소요일 $A_j$보다 크면 지연이다. 전체 약속의 중앙값과 비교해 지연을 판정하지 않는다.</p>
+<p>9월 1일 23시에 주문해 9월 2일 1시에 받았다면 경과 시간은 2시간이고 달력상 소요일은 1일이다.
+날짜 차이와 경과 시간을 섞으면 약속 당일에 받은 주문까지 지연으로 셀 수 있다. 받은 시각이 없는 주문은 실제 소요일을 계산할 수 없다.
+교재의 지연율은 배송 완료이며 수령 시각이 있는 주문에 한정된다.</p>
+<h3>추가 읽기 — 구간별 소요 시간</h3>
+<p>구매부터 승인, 승인부터 물류사 인계, 인계부터 수령까지의 경과 시간을 같은 주문에서 재면 총시간은 구간 시간의 합이다.
+같은 주문 집합으로 계산한 평균도 더할 수 있지만, 중앙값과 분위수는 일반적으로 더할 수 없다.
+어느 구간이 길다는 사실만으로 그 시간을 줄일 수 있는지나 누가 책임져야 하는지는 알 수 없다.</p>
+
+<h2 id="s6"><span>6</span>분위수와 서비스 수준</h2>
+<div class="def"><b>정의</b>: 분위수(quantile, $Q(p)$) — 누적분포함수 $F(x)=P(T\le x)$에 대해
+$Q(p)=\inf\{x:F(x)\ge p\}$. 값이 그 이하일 확률이 $p$ 이상이 되는 가장 작은 값이다.</div>
+<div class="def"><b>정의</b>: 서비스 수준(service level) — 약속을 지킨 주문의 비율. 같은 주문 집합에서 지연율은 1에서 서비스 수준을 뺀 값이다.</div>
+<p>분위수의 위치를 정하는 $p$와 실제로 센 서비스 수준은 구분한다. 같은 소요일이 반복되면 $Q(p)$ 이하인 비율이 $p$보다 클 수 있다.
+표본 분위수를 보간해 계산할 때도 실제 비율을 따로 확인해야 한다.</p>
+<h3>손 계산과 pandas의 보간</h3>
+<p>정렬한 관측값을 $x_{(1)},\ldots,x_{(n)}$이라 하자. pandas의 기본 선형 보간은
+$h=(n-1)p$, $k=\lfloor h\rfloor$, $a=h-k$로 두고 이웃 값 사이를 계산한다.
+$k&lt;n-1$일 때 $\widehat Q(p)=(1-a)x_{(k+1)}+a x_{(k+2)}$이며, $p=1$일 때는 최댓값이다.</p>
+<p>소요일이 1·2·3·4·5일이면 경험분포 정의의 0.80분위수는 4일이고, 선형 보간값은 4.2일이다.
+이를 5일로 올림하면 다섯 주문 모두 제때 온다. 따라서 올림한 분위수의 지연율이 항상 정확히 $1-p$가 되는 것은 아니다.
+교재 8절은 보간한 후보를 비교하고, 9절은 날짜로 안내하기 위해 올림한 뒤 지연율을 다시 센다.</p>
+<h3>지역별 후보와 전체 지연율</h3>
+<p>주마다 실제 소요일 분포가 다르면 전국 공통값에서 지역별 지연율이 크게 벌어질 수 있다.
+교재는 같은 분위수 위치를 각 주에 적용한 후보도 계산한다. 지역별로 계산한다고 평균 약속일과 전체 지연율이 반드시 함께 낮아지는 것은 아니다.
+전체 지연율은 주문 수로 가중한 주별 지연율이다.</p>
+$$\widehat L=\frac{\sum_s n_s\widehat L_s}{\sum_s n_s}$$
+<p>여기서 $n_s$는 주 $s$의 주문 수, $\widehat L_s$는 그 주의 지연율이다. 전체 지연율이 비슷해도 어떤 주에서는 지연이 늘고 다른 주에서는 줄 수 있다.
+기존 주별 평균 약속과 주마다 하나인 후보 약속의 차이는 개별 주문에 일괄적으로 더할 조정값이 아니다.</p>
+<h3>확장 읽기 — 재표집으로 본 분위수의 변동</h3>
+<div class="def"><b>정의</b>: 부트스트랩(bootstrap) — 관측 표본에서 중복을 허용해 같은 크기의 표본을 반복 추출하고 통계량의 변동을 살피는 방법.</div>
+<p>교재 9-3은 같은 주의 주문을 다시 뽑아 분위수를 500번 계산한다. 그 결과의 0.05·0.95분위수는 관측된 주문 구성에 따른 변동을 보여 준다.
+미래 주문의 배송일 범위가 아니며, 원자료에 없던 장기 지연이나 시간에 따른 변화는 담지 못한다.
+범위가 좁다는 이유만으로 앞으로도 같은 약속을 지킬 수 있다고 판단하지 않는다.</p>
+
+<h2 id="s7"><span>7</span>이 도구가 답하지 않는 것</h2>
+<p>분위수는 정한 $p$에 대응하는 소요일을 계산하지만 회사가 어느 지연율을 감수해야 하는지는 정해 주지 않는다.
+Olist 기록에는 긴 약속으로 잃는 주문과 지연 한 건의 손실을 비교할 정보가 없다. 교재는 비교한 후보 중 분석 기간의 전체 지연율과 가까운
+$p=0.92$를 선택한다. 비용 최적값이나 정확히 같은 지연율을 보장하는 값은 아니다.</p>
+<p>같은 주문에서 분위수를 정하고 그 주문의 지연율을 계산한 결과는 과거 자료 안의 비교다.
+운영 적용을 평가하려면 앞선 기간에서 후보를 정한 뒤 이후 주문에 그대로 적용해야 한다.
+기간을 바꿔 분위수를 다시 계산하는 민감도 확인과 이후 기간에서의 검증은 다르다.
+또한 배송 완료 주문만 사용하면 미완료 주문의 지연을 놓칠 수 있으므로, 전체 주문의 성과로 확대해서 읽지 않는다.</p>
+
+<h2 id="s8"><span>8</span>산업공학에서 배운 것과의 연결</h2>
+<p>관계형 데이터베이스의 키와 조인은 주문과 배송지를 정확히 연결하는 데 쓰인다. 물류관리의 소요일 분포는 어느 날짜까지 도착할지를 판단하는 데 쓰인다.
+교재는 주문 단위를 유지해 지연을 세고, 지역별 분위수로 조정 후보를 만든 다음 표본과 기간에 따라 판단이 바뀌는지 확인한다.</p>
+
+<h2 id="s9"><span>9</span>연습문제</h2>
+<p>각 문항에 해당하는 절을 읽고 손으로 답을 적는다. 조인과 평균은 3·4절, 날짜와 분위수는 5·6절을 참고한다.</p>
+<ol>
+  <li><b>조인 행 수.</b> 왼쪽 표에 키 A·B·C가 한 행씩, 오른쪽 표에 키 B가 두 행, C가 세 행, D가 한 행 있다.
+    INNER, LEFT, RIGHT, OUTER 조인의 결과 행 수를 각각 3절의 식으로 계산하라.</li>
+  <li><b>팽창분.</b> 주문 1,000건 중 900건은 아이템 1개, 80건은 2개, 20건은 5개이고 아이템이 없는 주문은
+    없다. orders에 order_items를 LEFT 조인하면 몇 행이 되는가. 팽창분 $\sum_j (n_j - 1)$은 얼마인가.</li>
+  <li><b>두 종류의 평균.</b> 위 문항의 주문에서 아이템 1개 주문의 상품 가격은 평균 50, 2개 주문은 80, 5개
+    주문은 120이라 하자. 주문 단위 단순평균과 팽창 표의 행 단위 평균을 각각 구하고, 어느 쪽이 크며 왜
+    그런지 4절의 공분산 식으로 설명하라.</li>
+  <li><b>키의 뜻.</b> 어떤 테이블에서 <code>customer_id</code>의 고유값 수가 행 수와 정확히 같다. 이 열은 고객
+    식별자인가 주문 식별자인가. 확인하려면 무엇을 더 봐야 하는가.</li>
+  <li><b>INNER 조인의 필터 효과.</b> 주문 테이블에 리뷰 테이블을 INNER 조인해 "지연 주문의 평균 별점"을
+    구했다. 리뷰는 배송 완료 뒤에 남는다. 리뷰가 없는 주문이 제외된다는 사실만으로 편향의 방향까지 정할 수 있는가.</li>
+  <li><b>가법성.</b> 세 구간의 중앙값이 0.01, 1.82, 7.10일이고 총 리드타임의 중앙값은 10.22일이다. 왜 세
+    중앙값의 합(8.93)이 총 중앙값과 다른가. 평균이었다면 어떻게 되는가.</li>
+  <li><b>날짜와 지연.</b> 9월 1일 23시에 구매하고 예상 배송일인 9월 2일 20시에 받았다.
+    경과 시간과 달력상 실제 소요일을 각각 구하라. 이 주문은 지연인가.</li>
+  <li><b>분위수의 올림.</b> 소요일이 1·2·3·4·5일이다. 선형 보간으로 0.80분위수를 구하고,
+    이를 올림한 날짜에서 지연율을 직접 세어라. 지연율이 0.20과 같은가.</li>
+  <li><b>전국 단일 대 지역 차등.</b> 두 지역의 리드타임이 각각 {5, 6, 7, 8, 9}일과 {20, 22, 24, 26, 28}일이다
+    (주문 수 같음). pandas의 선형 보간을 쓰고 올림하지 않는다. 전체를 합쳐 읽은 80분위수 하나로 약속할 때와 지역별 80분위수로 약속할 때, 각 지역의
+    지연율과 평균 약속일을 비교하라.</li>
+</ol>
+
+<h2 id="appx"><span>부록</span>교재에서 쓰는 함수</h2>
+<p>이 문서의 개념을 교재에서는 다음 함수로 실행한다. 인자의 뜻만 알면 된다.</p>
+<pre># 연결 뒤 주문 수를 확인한다
+orders.merge(customers, on="customer_id", how="left")
+
+# 월별 주문 수와 지연율
+monthly = d.groupby("month").agg(orders=("order_id", "size"), late_rate=("late", "mean"))
+
+# 날짜로 맞춘 뒤 소요일을 센다
+DAY = pd.Timedelta(days=1)
+actual_days = (d["order_delivered_customer_date"].dt.normalize()
+               - d["order_purchase_timestamp"].dt.normalize()) / DAY
+
+# 주별 분위수를 올림하고 각 주문에 대응시킨다
+q_state = r.groupby("customer_state")["actual_days"].quantile(0.92)
+promise = r["customer_state"].map(np.ceil(q_state))</pre>
+
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+    <span>BALAB · 부경대학교 시스템경영공학부</span>
+    <span><a href="../">강의 게시판</a> · <a href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week02_leadtime_promise.ipynb">2주차 교재 (Colab)</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
