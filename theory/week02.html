@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2주차 배경지식 — 배송 소요일의 분포와 약속</title>
+<meta name="description" content="분포, 평균과 분위수, 서비스 수준, 표본과 미래의 차이를 배송 예로 설명한다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surf: #fcfcfb; --ink: #0b0b0b; --muted: #898781; --grid: #e1e0d9;
+    --blue: #2a78d6; --blue-a: #cde2fb; --blue-b: #e7f0fb; --amber: #eda100; --red: #e34948;
+    --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --serif: "Noto Serif KR", "Apple Myungjo", serif;
+    --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--surf); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.75; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  header { border-bottom: 1px solid var(--ink); padding: 40px 0 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+  .eyebrow a { color: var(--muted); }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 4.6vw, 36px); line-height: 1.3; margin: 8px 0 4px; }
+  .lede { color: var(--muted); font-size: 14px; }
+  .where { background: var(--blue-b); border: 1px solid var(--blue-a); border-radius: 6px; padding: 14px 18px; margin: 22px 0 0; font-size: 14px; }
+  nav.toc { margin: 26px 0 0; font-size: 14px; }
+  nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+  nav.toc li { margin: 2px 0; break-inside: avoid; }
+  nav.toc li span { font-family: var(--mono); color: var(--muted); font-size: 12px; margin-right: 6px; }
+  main { padding: 10px 0 40px; }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: 21px; margin: 40px 0 10px; padding-top: 6px; }
+  h2 span { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-right: 10px; font-weight: 500; }
+  h3 { font-size: 15.5px; font-weight: 700; margin: 22px 0 6px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px 22px; }
+  li { margin: 3px 0; }
+  code { font-family: var(--mono); font-size: 13px; background: #f3f3f0; border-radius: 3px; padding: 1px 5px; }
+  pre { font-family: var(--mono); font-size: 13px; background: #f3f3f0; border-radius: 5px; padding: 12px 14px; overflow-x: auto; margin: 0 0 14px; line-height: 1.55; }
+  .def { border-left: 3px solid var(--blue); padding: 6px 14px; margin: 12px 0 14px; background: #fbfbf9; }
+  .def b { color: var(--blue); }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 16px; font-size: 14px; }
+  th, td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12.5px; font-family: var(--mono); }
+  .katex-display { margin: 10px 0 14px; overflow-x: auto; overflow-y: hidden; }
+  .note { color: var(--muted); font-size: 13.5px; }
+  footer { border-top: 1px solid var(--ink); padding: 18px 0 40px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+</style>
+</head>
+
+<body>
+<header><div class="wrap">
+  <div class="eyebrow"><a href="../">비즈니스 애널리틱스 2026</a> · 2주차 배경지식</div>
+  <h1>배송 소요일의 분포와 약속</h1>
+  <p class="lede">배송 약속을 생각하는 데 필요한 개념 · 약 5분 읽기</p>
+</div></header>
+<main class="wrap">
+<p class="where">배송에 평균 3일이 걸린다면 3일 안에 도착한다고 약속해도 될까? 평균을 아는 것과 약속을 지킬 가능성을 아는 것은 다르다.</p>
+
+<h2 id="distribution"><span>1</span>분포 — 얼마나 걸리는 주문이 얼마나 있는가</h2>
+<p>같은 곳으로 보내도 어떤 주문은 빨리 도착하고 어떤 주문은 늦게 도착한다. <b>분포는 값이 어느 범위에 얼마나 모여 있는지를 나타낸 것</b>이다. 배송 소요일의 분포를 보면 흔히 걸리는 날과 드물게 오래 걸리는 날을 함께 알 수 있다.</p>
+<p>예를 들어 주문 다섯 건의 소요일이 <b>1·2·2·3·7일</b>이라고 하자. 다섯 건 중 네 건은 3일 안에 도착하지만 한 건은 7일이 걸린다. 모두 평균 3일이라는 숫자에 들어 있지만, 약속을 정할 때는 늦게 도착하는 주문도 생각해야 한다.</p>
+
+<h2 id="quantile"><span>2</span>평균과 분위수 — 중심과 도착 비율은 다르다</h2>
+<p><b>평균</b>은 값을 모두 더해 개수로 나눈 값이다. 위 주문의 평균은 15를 5로 나눈 3일이다. 이 숫자만으로 3일 안에 도착하는 비율을 알 수는 없다. 다섯 건이 모두 3일 걸리는 경우에도 평균은 같지만, 그때는 전부 3일 안에 도착한다.</p>
+<p><b>분위수</b>는 정한 비율의 관측값을 포함하는 경계다. 위 다섯 건에서 적어도 0.80이 도착하는 가장 이른 날은 3일이다. 이런 관점에서 80분위수는 “어느 값까지 전체의 0.80이 들어오는가”를 나타낸다. 평균이 비슷한 지역도 늦은 배송이 얼마나 있는지에 따라 높은 분위수는 다를 수 있다.</p>
+<p>표본에서 분위수를 계산하는 방식에는 관측값 사이를 보간하는 방식도 있어 소수가 나올 수 있다. 정해진 날 이내에 도착한 비율은 실제 관측값으로 다시 확인한다.</p>
+
+<h2 id="service"><span>3</span>서비스 수준 — 약속을 지키는 비율</h2>
+<p><b>서비스 수준</b>은 약속한 날까지 도착한 주문의 비율이다. 같은 주문 집합에서 지연율과 서비스 수준을 더하면 1이다. 위 다섯 건에 3일을 약속하면 네 건이 지키므로 서비스 수준은 0.80, 지연율은 0.20이다. 약속 당일 도착도 지킨 것으로 센다.</p>
+<p>같은 배송 결과에 7일을 약속하면 다섯 건 모두 약속을 지킨다. <b>약속을 길게 잡을수록 지키기는 쉬워지지만, 고객에게 안내하는 기간도 길어진다.</b> 어느 수준을 목표로 할지는 지연의 손실과 긴 약속이 고객에게 미치는 영향을 함께 고려할 결정이다. 분포나 분위수 자체가 그 목표를 정해 주지는 않는다.</p>
+
+<h2 id="sample"><span>4</span>표본과 미래 — 관측한 비율이 보장은 아니다</h2>
+<p><b>표본</b>은 관심 대상에서 실제로 관측한 일부다. 위 다섯 주문에서 0.80이 3일 안에 도착했다고 해서 다음 다섯 주문 중 반드시 네 건이 제때 도착하는 것은 아니다. 같은 배송 조건에서도 어떤 주문을 관측했는지에 따라 평균과 분위수가 달라질 수 있다.</p>
+<p>배송 조건 자체가 달라질 수도 있다. 성수기 주문량, 배송 지역의 구성, 운송 과정이 바뀌면 과거 분포와 미래 분포가 달라진다. <b>과거의 분위수는 약속을 정할 근거이지만 미래의 도착 비율을 보장하지는 않는다.</b></p>
+</main>
+<footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<span>BALAB · 부경대학교 시스템경영공학부</span>
+<span><a href="../">강의 게시판</a> · <a href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week02_leadtime_promise.ipynb">2주차 교재 (Colab)</a></span>
+</div></footer>
+</body>
+</html>
