@@ -1,0 +1,84 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5주차 배경이론 — 판정과 비용</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script><style>
+  :root {
+    --surf: #fcfcfb; --ink: #0b0b0b; --muted: #898781; --grid: #e1e0d9;
+    --blue: #2a78d6; --blue-a: #cde2fb; --blue-b: #e7f0fb; --amber: #eda100; --red: #e34948;
+    --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --serif: "Noto Serif KR", "Apple Myungjo", serif;
+    --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--surf); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.75; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  header { border-bottom: 1px solid var(--ink); padding: 40px 0 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+  .eyebrow a { color: var(--muted); }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 4.6vw, 36px); line-height: 1.3; margin: 8px 0 4px; }
+  .lede { color: var(--muted); font-size: 14px; }
+  .where { background: var(--blue-b); border: 1px solid var(--blue-a); border-radius: 6px; padding: 14px 18px; margin: 22px 0 0; font-size: 14px; }
+  nav.toc { margin: 26px 0 0; font-size: 14px; }
+  nav.toc ol { list-style: none; columns: 2; column-gap: 24px; }
+  nav.toc li { margin: 2px 0; break-inside: avoid; }
+  nav.toc li span { font-family: var(--mono); color: var(--muted); font-size: 12px; margin-right: 6px; }
+  main { padding: 10px 0 40px; }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: 21px; margin: 40px 0 10px; padding-top: 6px; }
+  h2 span { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-right: 10px; font-weight: 500; }
+  h3 { font-size: 15.5px; font-weight: 700; margin: 22px 0 6px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px 22px; }
+  li { margin: 3px 0; }
+  code { font-family: var(--mono); font-size: 13px; background: #f3f3f0; border-radius: 3px; padding: 1px 5px; }
+  pre { font-family: var(--mono); font-size: 13px; background: #f3f3f0; border-radius: 5px; padding: 12px 14px; overflow-x: auto; margin: 0 0 14px; line-height: 1.55; }
+  .def { border-left: 3px solid var(--blue); padding: 6px 14px; margin: 12px 0 14px; background: #fbfbf9; }
+  .def b { color: var(--blue); }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0 16px; font-size: 14px; }
+  th, td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12.5px; font-family: var(--mono); }
+  .katex-display { margin: 10px 0 14px; overflow-x: auto; overflow-y: hidden; }
+  .note { color: var(--muted); font-size: 13.5px; }
+  footer { border-top: 1px solid var(--ink); padding: 18px 0 40px; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+
+main {padding-top:24px;padding-bottom:48px} section {margin:28px 0} p {margin:12px 0} table {width:100%;border-collapse:collapse;margin:16px 0} td,th {padding:8px;border-bottom:1px solid #ddd;text-align:left} li {margin:10px 0} </style></head><body>
+<header><div class="wrap"><p class="eyebrow">BUSINESS ANALYTICS · WEEK 05</p><h1>판정과 비용</h1><p>분류 점수를 의사결정으로 바꿀 때 필요한 이론</p></div></header>
+<main class="wrap">
+<nav><p><a href="#errors">두 오류</a> · <a href="#threshold">비용에서 기준 도출</a> · <a href="#split">자료의 역할</a> · <a href="#selection">임계값 선택</a> · <a href="#calibration">확률 보정</a> · <a href="#model">모델 설정</a></p></nav>
+<section id="errors"><h2>1. 두 오류를 따로 센다</h2>
+<p>정의: 혼동행렬(confusion matrix)은 실제 클래스와 판정을 교차해 센 표다. 이 장에서 실제 APS 고장을 1, 다른 부품 고장을 0으로 둔다.</p>
+<table><tr><th>판정</th><th>실제 APS: 1</th><th>실제 비APS: 0</th></tr><tr><td>APS: 1</td><td>TP, 맞힌 APS</td><td>FP, 오경보</td></tr><tr><td>비APS: 0</td><td>FN, 미탐지</td><td>TN, 맞힌 비APS</td></tr></table>
+<p>정의: 오경보(false positive)는 실제 0을 1로 판정한 오류다. 미탐지(false negative)는 실제 1을 0으로 판정한 오류다. 정답 판정 비용을 0으로 놓고 두 오류의 단가를 각각 $c_{FP},c_{FN}$이라 하면 총비용은 다음과 같다.</p>
+$$C=c_{FP}FP+c_{FN}FN$$
+<p>Scania 챌린지의 단가는 10과 500이다. 이는 두 오분류를 평가하는 상대 비용이다. 정비 작업비 전체, 예방한 고장 수 또는 현금 절감액으로 읽지 않는다. <a href="https://archive.ics.uci.edu/dataset/421/aps+failure+at+scania+trucks">UCI 원자료 설명</a>.</p>
+<p>정확도는 $(TP+TN)/N$이다. 두 오류를 동일하게 한 건으로 세므로, 오류 비용이 다를 때 정확도가 높은 규칙이 비용도 낮다는 보장은 없다.</p></section>
+<section id="threshold"><h2>2. 비용에서 판정 기준을 도출한다</h2>
+<p>정의: 임계값(threshold)은 점수가 그 값 이상이면 1로 판정하는 경계다. 실제 APS 확률이 $p$이고 정답 판정 비용이 0이면 APS로 판정할 기대비용은 $(1-p)c_{FP}$, 비APS로 판정할 기대비용은 $pc_{FN}$이다.</p>
+$$ (1-p)c_{FP}\le pc_{FN}\quad\Longleftrightarrow\quad p\ge\frac{c_{FP}}{c_{FP}+c_{FN}} $$
+<p>10과 500에서는 약 0.019608이다. 예를 들어 $p=0.01$이면 두 기대비용은 9.9와 5이고, $p=0.03$이면 9.7과 15다. 등호에서는 기대비용이 같다. 교재는 점수가 기준 이상이면 APS로 판정하는 규약을 사용한다.</p>
+<p>이 식에는 점수가 실제 확률에 맞고, 두 오류의 단가가 기록마다 같으며, 정답 판정 비용이 0이라는 조건이 있다. 비용 비율만 바뀌면 기준을 다시 계산할 수 있지만, 분포가 바뀌면 확률의 적합성도 다시 확인해야 한다.</p>
+<h3>정답 판정에도 비용이 있으면</h3>
+<p>판정을 $a$, 실제 클래스를 $y$라 하고 비용을 $L(a,y)$로 쓰자. 두 행동의 기대비용을 직접 비교한다.</p>
+$$R(1)=(1-p)L(1,0)+pL(1,1),\qquad R(0)=(1-p)L(0,0)+pL(0,1)$$
+<p>$A=L(1,0)-L(0,0)$, $B=L(0,1)-L(1,1)$가 양수이면 기준은 $A/(A+B)$다. 이 조건이 아니면 원래 두 기대비용을 비교해야 한다. 모든 대상에게 발생하는 검사비나 개입 성공률을 무시하고 FP·FN 공식에 숫자만 넣어서는 안 된다.</p></section>
+<section id="split"><h2>3. 학습·검증·테스트의 역할</h2>
+<table><tr><th>자료</th><th>이 장의 크기</th><th>정하는 것</th></tr><tr><td>학습용</td><td>48,000건</td><td>중앙값과 모델</td></tr><tr><td>검증용</td><td>12,000건</td><td>주어진 비용에서 임계값</td></tr><tr><td>테스트</td><td>16,000건</td><td>고정된 규칙의 평가</td></tr></table>
+<p>정의: 층화 분할(stratified split)은 클래스별 비율을 유지해 표본을 나누는 방법이다. 원래 학습 파일의 APS 1,000건을 800건과 200건으로 나눈다. 이 분할이 시간 변화나 실제 운행 모집단을 대표한다는 뜻은 아니다.</p>
+<p>결측값을 채울 중앙값은 모델 학습용에서만 계산한다. 검증과 테스트는 그 값을 받아 변환한다. 검증까지 합친 중앙값으로 학습하면 검증 입력의 정보가 학습 과정에 들어간다. <a href="https://scikit-learn.org/stable/common_pitfalls.html#data-leakage">scikit-learn의 정보 누출 설명</a>.</p>
+<p>테스트 성적을 보고 시드·모델·기준을 바꾸면 테스트가 선택에 사용된다. 미리 정한 여러 규칙을 함께 평가하는 것과, 그 결과를 보고 새 규칙을 만드는 것은 구분한다. 이 장은 모델을 검증 선택 뒤 재학습하지 않는다. 새 모델의 점수 분포가 달라지면 기존 임계값과 맞지 않을 수 있기 때문이다.</p></section>
+<section id="selection"><h2>4. 검증에서 가능한 판정을 비교한다</h2>
+<p>점수가 $s_i$인 기록을 $s_i\ge t$로 판정한다고 하자. 검증 표본에서 판정은 관측된 점수를 지날 때만 바뀐다. 따라서 모든 서로 다른 점수와 두 극단을 후보로 쓰면 가능한 임계값 판정을 모두 비교할 수 있다. 같은 점수의 기록은 함께 바뀐다.</p>
+<p>교재의 확률 후보 0은 전원 APS 판정이고, 무한대는 전원 비APS 판정이다. 음수도 가능한 일반 점수에는 전원 판정을 보장하는 더 작은 기준을 사용한다. 단일 변수 기준선은 음의 무한대를 사용한다.</p>
+$$\hat t\in\arg\min_{t\in\mathcal T} \{c_{FP}FP_{val}(t)+c_{FN}FN_{val}(t)\}$$
+<p>후보를 오름차순으로 놓고 최소 비용인 마지막 후보를 고른다. 이는 동률에서 APS 판정 수가 적은 후보를 우선하는 규약이다. 이 선택은 검증 표본의 최솟값이며, 미래 기록에서의 최적값을 보장하지 않는다.</p>
+<p>작은 범위의 등간격 격자만 사용한다면 결론은 그 격자 안의 최소값이다. 최솟값이 검색 끝에 붙으면 범위 밖과 전원 판정 여부를 점검해야 한다.</p></section>
+<section id="calibration"><h2>5. 높은 점수와 맞는 확률은 다르다</h2>
+<p>정의: 확률 보정(calibration)은 같은 예측 확률을 받은 집단의 실제 양성 비율이 그 확률과 일치하는 성질이다. 양성을 음성보다 높게 정렬하는 능력과 확률값 자체의 정확성은 다른 특성이다.</p>
+<p>확률 구간별 평균 점수와 실제 비율을 비교할 수 있지만, 구간에 양성이 몇 건 없는 경우 표본 변동이 크다. 하나의 구간에서 비율이 두 배라고 해서 전체 확률을 두 배로 바꾸거나 경험적 임계값의 원인을 확정하지 않는다. 보정 모델을 추가하려면 별도의 학습·검증 설계가 필요하다.</p>
+<p>검증과 테스트의 총비용 차이는 표본 크기, 클래스 비율, 기록 구성, 임계값 선택의 변동을 함께 반영한다. 검증 비용을 표본 수로 환산한 뒤 테스트와의 차이 전부를 과적합으로 설명하지 않는다.</p></section>
+<section id="model"><h2>6. 교재에서 제공하는 모델</h2>
+<p>LightGBM은 그래디언트 부스팅 결정 트리의 구현이다. 이전 단계의 손실을 줄이도록 트리를 순서대로 더한다. 출력 점수를 분류 기준에 적용하는 것이 이 장의 주제이며 모델 설정의 최적화가 주제는 아니다.</p>
+<table><tr><th>인자</th><th>제공값</th><th>뜻</th></tr>
+<tr><td>num_leaves</td><td>15</td><td>트리의 최대 잎 수</td></tr><tr><td>learning_rate</td><td>0.03</td><td>각 트리를 더할 때의 반영 크기</td></tr><tr><td>n_estimators</td><td>800</td><td>부스팅 반복 수</td></tr><tr><td>min_child_samples</td><td>20</td><td>잎에 요구하는 표본 수 설정</td></tr><tr><td>subsample / subsample_freq</td><td>0.8 / 1</td><td>매 반복 행 표본 추출</td></tr><tr><td>colsample_bytree</td><td>0.8</td><td>트리별 입력 열 표본 비율</td></tr><tr><td>random_state</td><td>0</td><td>난수 시드</td></tr><tr><td>n_jobs</td><td>1</td><td>실행 스레드 수</td></tr><tr><td>deterministic / force_col_wise</td><td>True / True</td><td>재현성을 위한 계산 설정</td></tr><tr><td>verbose</td><td>−1</td><td>로그 출력 억제</td></tr></table>
+<p>이 값은 제공 설정이며 5겹 교차검증에서 최적이었다는 근거를 제시한 것은 아니다. 같은 소프트웨어 버전과 환경을 사용하는 것이 재현에 유리하다. 익명화된 변수로 만든 분류 모델이므로 특정 부품의 고장 원인을 설명하는 모델로 해석하지 않는다.</p></section>
+<p>교재: <a href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week05_cost_threshold_1.ipynb">5-1 두 오류와 판정 점수</a> · <a href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week05_cost_threshold_2.ipynb">5-2 검증에서 고르고 테스트에서 확인</a> · 랩: 같은 APS 자료의 비용 조건 비교</p>
+</main></body></html>
