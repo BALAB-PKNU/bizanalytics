@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10주차 이론 — 군집분석</title>
+<script>document.documentElement.classList.add("js");</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --surround: #1e2228; --paper: #ffffff; --ink: #1b1f24; --ink-2: #2d333b; --sub: #5a6370; --line: #d5dae1;
+    --accent: #1d4f91; --def-bg: #eef3fa; --ex-bg: #f6f7f9; --head-bg: #f4f6f8;
+    --a: #fff1c7; --ab: #ffcf5c; --colhl: #dbe6f5; --zero: #b6bdc7; --bar: 52px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--surround); color: var(--ink); -webkit-font-smoothing: antialiased; word-break: keep-all;
+         font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; }
+  code { font-family: "JetBrains Mono", Consolas, "D2Coding", monospace; font-size: .84em; }
+
+  /* 슬라이드 1장 = 1280 × 720 캔버스, 화면에 맞춰 확대·축소 */
+  .deck { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px 0; }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; background: var(--paper);
+           font-size: 24px; line-height: 1.55; padding: 48px 64px 54px; display: flex; flex-direction: column; }
+  .slide h2 { font-size: 1.6em; font-weight: 700; color: var(--accent); line-height: 1.25; letter-spacing: -.01em;
+              margin: 0 0 .7em; padding-bottom: .3em; border-bottom: 3px solid var(--accent); }
+  .slide p { margin: 0 0 .5em; }
+  .slide ul { list-style: none; margin: 0; padding: 0; }
+  .slide ul > li { position: relative; padding-left: 1.05em; margin: .4em 0; }
+  .slide ul > li::before { content: ""; position: absolute; left: .14em; top: .62em; width: .36em; height: .36em;
+                           border-radius: 50%; background: var(--accent); }
+  .slide li > ul { margin: .15em 0 .1em; }
+  .slide li > ul > li { font-size: .92em; margin: .22em 0; color: var(--ink-2); }
+  .slide li > ul > li::before { background: none; border: 2px solid var(--accent); width: .34em; height: .34em; top: .6em; }
+  .slide ol { margin: 0; padding-left: 1.5em; }
+  .slide ol > li { margin: .4em 0; padding-left: .2em; }
+  .slide b.k { color: var(--accent); }
+  .pg { position: absolute; right: 28px; bottom: 18px; font-size: 15px; color: var(--sub); }
+
+  .def { background: var(--def-bg); border-left: 6px solid var(--accent); border-radius: 0 6px 6px 0;
+         padding: .55em 1em; margin: 0 0 .75em; }
+  .def > .t, .ex > .t { font-weight: 700; margin-right: .55em; }
+  .def > .t { color: var(--accent); }
+  .ex { background: var(--ex-bg); border: 1px solid var(--line); border-radius: 6px; padding: .5em 1em; margin: .5em 0 .4em; }
+  .ex ul { margin-top: .1em; }
+  .ex ul > li { margin: .2em 0; }
+  .q { font-size: 1.3em; font-weight: 600; border-left: 6px solid var(--accent); background: var(--def-bg);
+       border-radius: 0 6px 6px 0; padding: .6em 1em; margin: .2em 0 1em; }
+  .mt { margin-top: .7em; }
+  .cols { display: grid; grid-template-columns: 1fr auto; gap: 1.6em; align-items: start; }
+  .cols.even { grid-template-columns: 1fr 1fr; }
+  .cols > * { min-width: 0; }
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: .45em; align-items: stretch; margin: .5em 0 .3em; }
+  .flow .step { background: var(--def-bg); border: 1px solid #c8d5e8; border-radius: 8px; padding: .55em .7em; font-size: .88em; line-height: 1.45; }
+  .flow .step b { display: block; color: var(--accent); font-size: 1.08em; margin-bottom: .3em; }
+  .flow .arr { align-self: center; color: var(--accent); font-size: 1.3em; }
+  .bad { color: #c0392b; font-weight: 600; }
+  .fig { display: block; width: 520px; max-width: 100%; }
+  .fig.sm { width: 450px; }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .ca { color: #2a78d6; font-weight: 700; }
+  .cb { color: #eb6834; font-weight: 700; }
+  .pipe { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr; gap: .4em; align-items: stretch; margin: .1em 0 .8em; }
+  .pbox { border-radius: 8px; padding: .45em .5em; text-align: center; font-size: .82em; line-height: 1.35; }
+  .pbox b { display: block; font-size: 1.05em; margin-bottom: .15em; }
+  .pbox.data { border: 2px solid var(--line); background: #fff; }
+  .pbox.alg { background: var(--accent); color: #fff; }
+  .parr { align-self: center; color: var(--accent); font-size: 1.3em; }
+  .split { display: grid; grid-template-columns: auto auto auto; justify-content: center; align-items: end; column-gap: 1.2em;
+           margin: .5em 0 .8em; }
+  .split .side { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; justify-content: center; max-width: 16em; }
+  .split .lab { flex-basis: 100%; text-align: center; font-size: .78em; font-weight: 600; color: var(--sub); }
+  .split .chip { border: 2px solid var(--accent); border-radius: 8px; padding: .2em .8em; font-weight: 600; background: var(--def-bg); }
+  .split .arrow { font-size: 1.6em; color: var(--accent); padding-bottom: .05em; }
+  .split .cap { grid-column: 1 / -1; text-align: center; font-size: .8em; color: var(--sub); margin-top: .35em; }
+
+  .katex { font-size: 1.06em; white-space: nowrap; }
+  .katex-display { margin: .45em 0 .35em; }
+  .katex-display > .katex { font-size: 1.18em; }
+  .nw { white-space: nowrap; }
+
+  table { border-collapse: collapse; font-size: .88em; font-variant-numeric: tabular-nums; }
+  th, td { padding: .32em .8em; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; }
+  th { border-bottom: 2px solid var(--ink); font-weight: 600; background: var(--head-bg); }
+  .l { text-align: left; }
+  table.full { width: 100%; }
+  table.sm { font-size: .8em; }
+  table.sm th, table.sm td { padding: .26em .7em; }
+  tr.no td { color: var(--sub); }
+  table.tx { font-size: .8em; }
+  table.tx th, table.tx td { padding: .2em .58em; }
+  table.tx td.z { color: var(--zero); }
+  table.tx th.c { background: var(--colhl); }
+  table.tx tr.a td { background: var(--a); }
+  table.tx tr.ab td { background: var(--ab); }
+  table.tight th, table.tight td { padding: .17em .6em; }
+  table.ct { font-size: .82em; }
+  table.ct th, table.ct td { padding: .3em .7em; }
+  table.ct td.a { background: var(--a); }
+  table.ct td.ab { background: var(--ab); font-weight: 700; }
+  .lg { font-size: .8em; color: var(--sub); margin-top: .5em; }
+  .lg .sw { display: inline-block; width: 1.1em; height: .85em; vertical-align: -.08em; margin-right: .35em; border: 1px solid var(--line); }
+  .lg .sw.a { background: var(--a); }
+  .lg .sw.ab { background: var(--ab); }
+  .lg .item + .item { margin-left: 1.2em; }
+
+  .cover { justify-content: center; padding-left: 120px; }
+  .cover h1 { font-size: 3.2em; font-weight: 800; color: var(--accent); line-height: 1.15; margin: 0; }
+  .cover .en { font-size: 1.35em; color: var(--sub); margin: .25em 0 2.2em; }
+  .cover .course { font-size: 1.1em; }
+  .toc-list { font-size: 1.12em; }
+  .toc-list > li { margin: .55em 0; }
+
+  /* 넘기는 화면 */
+  .bar, .toc, .progress { display: none; }
+  html.js, html.js body { height: 100%; overflow: hidden; }
+  html.js .stage { position: fixed; left: 0; right: 0; top: 0; bottom: var(--bar); }
+  html.js .deck { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; padding: 0; display: block; transform-origin: 0 0; }
+  html.js .slide { position: absolute; left: 0; top: 0; display: none; box-shadow: 0 6px 28px rgba(0,0,0,.4); }
+  html.js .slide.cur { display: flex; }
+  html.js .progress { display: block; position: fixed; left: 0; top: 0; right: 0; height: 3px; z-index: 5; }
+  html.js .progress span { display: block; height: 100%; background: #6fa0e0; width: 0; transition: width .15s; }
+  html.js .bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; height: var(--bar); align-items: center;
+                 justify-content: center; gap: 10px; color: #d6dbe2; font-size: 15px; z-index: 5; background: var(--surround); }
+  .bar button { font: inherit; color: #e8ecf1; background: #2c323b; border: 1px solid #3c4450; border-radius: 6px;
+                padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+  .bar button:hover { background: #38404b; }
+  .bar button:disabled { opacity: .35; cursor: default; }
+  .bar .count { min-width: 76px; text-align: center; font-variant-numeric: tabular-nums; }
+  .bar .sep { width: 1px; height: 22px; background: #3c4450; margin: 0 6px; }
+  html.fs .bar { display: none; }
+  html.fs .stage { bottom: 0; }
+  html.js .toc { position: fixed; top: 0; right: 0; bottom: var(--bar); width: min(420px, 92vw); background: #fff; z-index: 6;
+                 overflow-y: auto; padding: 20px 20px 28px; box-shadow: -6px 0 24px rgba(0,0,0,.35); font-size: 15px; }
+  html.js .toc[hidden] { display: none; }
+  html.js .toc:not([hidden]) { display: block; }
+  .toc h3 { margin: 0 0 10px; font-size: 16px; color: var(--accent); }
+  .toc ol { margin: 0 0 16px; padding-left: 2.2em; }
+  .toc li { margin: 2px 0; }
+  .toc a { color: var(--ink); text-decoration: none; display: block; padding: 3px 6px; border-radius: 4px; }
+  .toc a:hover { background: var(--def-bg); }
+  .toc a.on { background: var(--def-bg); color: var(--accent); font-weight: 600; }
+  .toc .ext a { color: var(--accent); display: inline; padding: 0; }
+
+  /* 세로로 긴 좁은 화면: 슬라이드 비율을 풀고 글을 화면 폭에 맞춤 */
+  @media screen {
+    html.js.reflow, html.js.reflow body { height: auto; overflow: visible; background: var(--paper); }
+    html.js.reflow .stage { position: static; }
+    html.js.reflow .deck { position: static; width: auto; height: auto; transform: none !important; }
+    html.js.reflow .slide { position: relative; width: auto; height: auto; min-height: calc(100vh - var(--bar));
+                            font-size: 16px; padding: 22px 16px calc(var(--bar) + 28px); box-shadow: none; overflow: visible; }
+    html.js.reflow .cover { padding-left: 16px; }
+    html.js.reflow .cols, html.js.reflow .flow, html.js.reflow .pipe { grid-template-columns: 1fr; gap: .6em; }
+    html.js.reflow .parr { display: none; }
+    html.js.reflow .flow .arr { display: none; }
+    html.js.reflow .tw, html.js.reflow .katex-display { overflow-x: auto; overflow-y: hidden; }
+    html.js.reflow .pg { bottom: calc(var(--bar) + 8px); right: 16px; }
+    html.js.reflow .bar { gap: 6px; font-size: 14px; }
+    html.js.reflow .bar button { padding: 6px 10px; }
+    html.js.reflow #fs-btn, html.js.reflow .bar .sep { display: none; }
+    html.js.reflow .bar .count { min-width: 64px; }
+  }
+
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html.js, html.js body { height: auto; overflow: visible; background: #fff; }
+    .bar, .toc, .progress { display: none !important; }
+    html.js .stage { position: static; }
+    html.js .deck { position: static; transform: none !important; width: auto; height: auto; }
+    html.js .slide { display: flex !important; position: relative; box-shadow: none; break-after: page; }
+  }
+</style>
+</head>
+<body>
+<div class="progress"><span></span></div>
+<div class="stage">
+<main class="deck">
+
+<section class="slide cover">
+  <h1>군집분석</h1>
+  <p class="en">Clustering</p>
+  <p class="course">비즈니스 애널리틱스 · 10주차</p>
+</section>
+
+<section class="slide">
+  <h2>군집분석의 활용</h2>
+  <ul>
+    <li><b>군집분석</b>(clustering): 정답 표시 없이 비슷한 대상끼리 묶는 분석</li>
+    <li>활용 분야
+      <ul>
+        <li>고객 세분화: 구매 행태가 비슷한 고객을 묶어 마케팅을 달리함</li>
+        <li>사용 패턴 유형화: 전력·설비 사용 시간대가 비슷한 고객이나 설비를 묶음</li>
+        <li>상품·매장 유형화: 판매 패턴이 비슷한 상품이나 매장을 묶어 운영 방식을 정함</li>
+        <li>대표 표본: 군집마다 대표 대상을 골라 조사·실험 비용을 줄임</li>
+      </ul></li>
+    <li>회귀·분류와의 차이: 맞혀야 할 \(y\)가 없음
+      <ul><li>결과의 좋고 나쁨은 해석이 되는지, 결정에 쓸 수 있는지로 판단</li></ul></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>이번 주의 결정 문제</h2>
+  <div class="q">대상을 몇 개의 무리로 나누고, 어느 무리에 무엇을 할 것인가</div>
+  <ul>
+    <li>교재: 온라인 도매상 고객 5,839명, 재구매 쿠폰을 보낼 무리</li>
+    <li>랩: 전력 고객 370곳(기록 정리 뒤 357곳), 저녁 수요반응 프로그램을 먼저 제안할 무리</li>
+    <li>필요한 도구
+      <ul>
+        <li>대상 사이의 거리</li>
+        <li>비슷한 대상을 묶는 알고리즘: k-means, 계층 군집</li>
+        <li>군집 수를 정하는 기준</li>
+      </ul></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>강의 구성</h2>
+  <ol class="toc-list">
+    <li>거리와 척도</li>
+    <li>k-means</li>
+    <li>계층 군집과 dendrogram</li>
+    <li>군집 수 정하기와 결과 해석</li>
+  </ol>
+  <ul class="mt">
+    <li>모든 계산 예제: 교재와 같은 온라인 도매상 고객 자료</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>예제 자료: 고객별 RFM</h2>
+  <ul>
+    <li>출처: UCI Online Retail II, 영국 온라인 선물 도매상의 2009-12 ~ 2011-12 실제 주문</li>
+    <li>고객 5,839명마다 구매 행태를 세 숫자로 요약, 기준일 2011-12-10</li>
+    <li>취소 주문은 같은 고객·상품·수량·단가의 원래 주문과 짝지어 뺀 뒤 계산</li>
+  </ul>
+  <div class="tw mt"><table class="full">
+    <tr><th class="l">지표</th><th class="l">정의</th><th>고객 12346</th><th>고객 12347</th></tr>
+    <tr><td class="l">R (recency)</td><td class="l">마지막 구매 후 기준일까지 지난 날수</td><td>529</td><td>2</td></tr>
+    <tr><td class="l">F (frequency)</td><td class="l">주문 수</td><td>2</td><td>8</td></tr>
+    <tr><td class="l">M (monetary)</td><td class="l">구매 금액 합계, 파운드</td><td>169</td><td>4,922</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>고객 한 명 = 세 변수 공간의 점 하나, 군집분석은 가까운 점끼리 묶는 일</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>유클리드 거리의 정의</h2>
+  <div class="def"><span class="t">정의</span>변수 \(p\)개로 나타낸 두 대상 \(x=(x_1,\dots,x_p)\), \(y=(y_1,\dots,y_p)\)의 유클리드 거리
+    \[d(x,y)=\sqrt{\sum_{j=1}^{p}(x_j-y_j)^2}\]</div>
+  <div class="ex"><span class="t">예</span>고객 12346과 12347
+    <ul>
+      <li>차이: R 527일, F −6회, M −4,752파운드</li>
+      <li>\(d=\sqrt{527^2+6^2+4{,}752^2}=4{,}781\)</li>
+      <li>거리 제곱의 98.8%가 M 차이에서 나옴</li>
+    </ul></div>
+  <ul>
+    <li>결과: 단위가 큰 변수 하나가 거리를 지배함, R과 F의 차이는 거리에 반영되지 않음</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>척도 맞추기: 로그 변환과 표준화</h2>
+  <ul>
+    <li>치우친 분포: M 중앙값 851파운드, 평균 2,830파운드, 최댓값 579,129파운드</li>
+  </ul>
+  <div class="cols even mt">
+    <div class="def"><span class="t">로그 변환</span>큰 값 사이의 차이를 줄임, 0에도 쓸 수 있음
+      \[x'=\log(1+x)\]</div>
+    <div class="def"><span class="t">표준화</span>모든 변수를 평균 0, 표준편차 1로 맞춤
+      \[z=\frac{x'-\bar{x}'}{s_{x'}}\]</div>
+  </div>
+  <div class="ex"><span class="t">예</span>고객 12346 = (1.16, −0.55, −1.20), 고객 12347 = (−2.09, 0.81, 1.24)
+    <ul><li>차이 R 3.25, F 1.36, M 2.44, 거리 \(d=4.28\): 세 변수의 차이가 모두 거리에 반영됨</li></ul></div>
+</section>
+
+<section class="slide">
+  <h2>centroid와 WSS의 정의</h2>
+  <div class="def"><span class="t">centroid</span>군집 \(C_k\)에 속한 대상 \(n_k\)개의 변수별 평균, 군집의 중심점
+    \[\mu_k=\frac{1}{n_k}\sum_{i\in C_k}x_i\]</div>
+  <div class="def"><span class="t">WSS</span>within-cluster sum of squares, 각 대상과 자기 군집 centroid 사이 거리의 제곱을 모두 더한 값
+    \[\mathrm{WSS}=\sum_{k=1}^{K}\sum_{i\in C_k}\lVert x_i-\mu_k\rVert^2\]</div>
+  <ul>
+    <li>WSS가 작을수록 군집 안의 대상끼리 가까움</li>
+    <li>코드: <code>model.cluster_centers_</code>는 centroid, <code>model.inertia_</code>는 WSS</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>k-means의 목표</h2>
+  <div class="def"><span class="t">목표</span>정해진 군집 수 \(K\)에 대해 WSS가 가장 작은 나눔 \(C_1,\dots,C_K\)를 찾음
+    \[\min_{C_1,\dots,C_K}\ \sum_{k=1}^{K}\sum_{i\in C_k}\lVert x_i-\mu_k\rVert^2\]</div>
+  <ul>
+    <li>가능한 나눔의 수가 매우 많음
+      <ul><li>대상 20개를 군집 4개로 나누는 방법만 452억 가지</li></ul></li>
+    <li>모든 나눔을 비교하는 대신, WSS를 조금씩 줄이는 반복으로 좋은 나눔을 찾음</li>
+    <li>군집 수 \(K\)는 분석가가 정함</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>k-means 알고리즘의 절차</h2>
+  <div class="flow">
+    <div class="step"><b>1. 시작</b>centroid \(K\)개를 정함</div>
+    <div class="arr">→</div>
+    <div class="step"><b>2. 배정</b>각 대상을 가장 가까운 centroid의 군집에 넣음</div>
+    <div class="arr">→</div>
+    <div class="step"><b>3. 갱신</b>군집마다 centroid를 소속 대상의 평균으로 다시 계산</div>
+    <div class="arr">→</div>
+    <div class="step"><b>4. 반복</b>배정이 바뀌지 않을 때까지 2~3을 되풀이</div>
+  </div>
+  <ul class="mt">
+    <li>시작 centroid: 대상 가운데 \(K\)개를 고름, sklearn은 이미 고른 centroid에서 먼 대상일수록 뽑힐 확률이 높은 k-means++ 방식</li>
+    <li>결과: 대상별 군집 번호 <code>labels_</code>, centroid, WSS</li>
+    <li>군집 번호는 이름표, 번호의 크고 작음에는 뜻이 없음</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>k-means 진행 예: 자료와 시작</h2>
+  <div class="cols">
+    <div>
+      <ul><li>고객 8명, 로그·표준화한 R과 M, \(K=2\)</li></ul>
+      <div class="tw"><table class="sm">
+        <tr><th>고객</th><th>R(일)</th><th>M(파운드)</th><th>로그·표준화 R</th><th>로그·표준화 M</th></tr>
+        <tr><td>12347</td><td>2</td><td>4,922</td><td>-2.09</td><td>1.24</td></tr><tr><td>12348</td><td>75</td><td>1,658</td><td>-0.06</td><td>0.45</td></tr><tr><td>12349</td><td>18</td><td>3,679</td><td>-0.93</td><td>1.03</td></tr><tr><td>12350</td><td>310</td><td>294</td><td>0.82</td><td>-0.80</td></tr><tr><td>12351</td><td>375</td><td>301</td><td>0.94</td><td>-0.79</td></tr><tr><td>12352</td><td>36</td><td>1,609</td><td>-0.51</td><td>0.43</td></tr><tr><td>12353</td><td>204</td><td>407</td><td>0.56</td><td>-0.57</td></tr><tr><td>12354</td><td>232</td><td>1,079</td><td>0.64</td><td>0.14</td></tr>
+      </table></div>
+      <ul class="mt"><li>시작 centroid: <span class="ca">A</span> = 고객 12348 (-0.06, 0.45), <span class="cb">B</span> = 고객 12350 (0.82, -0.80)</li></ul>
+    </div>
+    <div class="fig"><svg viewBox="0 0 520 372" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="104.4" y1="36" x2="104.4" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="104.4" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-2</text><line x1="225.5" y1="36" x2="225.5" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="225.5" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-1</text><line x1="346.6" y1="36" x2="346.6" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="346.6" y="340" font-size="13" fill="#5a6370" text-anchor="middle">0</text><line x1="467.7" y1="36" x2="467.7" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="467.7" y="340" font-size="13" fill="#5a6370" text-anchor="middle">1</text><line x1="56" y1="306.4" x2="504" y2="306.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="310.4" font-size="13" fill="#5a6370" text-anchor="end">-1</text><line x1="56" y1="202.4" x2="504" y2="202.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="206.4" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="56" y1="98.4" x2="504" y2="98.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="102.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><text x="280.0" y="360" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 R (클수록 오래전 구매)</text><text transform="translate(16,179.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 M (클수록 구매 금액 큼)</text><circle cx="93.5" cy="73.4" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="105.5" y="61.4" font-size="15" fill="#1b1f24" text-anchor="start">12347</text><circle cx="339.3" cy="155.6" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="351.3" y="145.6" font-size="15" fill="#1b1f24" text-anchor="start">12348</text><circle cx="234.0" cy="95.3" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="222.0" y="83.3" font-size="15" fill="#1b1f24" text-anchor="end">12349</text><circle cx="445.9" cy="285.6" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="439.9" y="311.6" font-size="15" fill="#1b1f24" text-anchor="end">12350</text><circle cx="460.4" cy="284.6" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="468.4" y="310.6" font-size="15" fill="#1b1f24" text-anchor="start">12351</text><circle cx="284.8" cy="157.7" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="284.8" y="183.7" font-size="15" fill="#1b1f24" text-anchor="middle">12352</text><circle cx="414.4" cy="261.7" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="400.4" y="251.7" font-size="15" fill="#1b1f24" text-anchor="end">12353</text><circle cx="424.1" cy="187.8" r="7" fill="#9aa3ad" stroke="#ffffff" stroke-width="2"/><text x="436.1" y="177.8" font-size="15" fill="#1b1f24" text-anchor="start">12354</text><line x1="330.3" y1="146.6" x2="348.3" y2="164.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="330.3" y1="164.6" x2="348.3" y2="146.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="330.3" y1="146.6" x2="348.3" y2="164.6" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="330.3" y1="164.6" x2="348.3" y2="146.6" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="436.9" y1="276.6" x2="454.9" y2="294.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="436.9" y1="294.6" x2="454.9" y2="276.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="436.9" y1="276.6" x2="454.9" y2="294.6" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><line x1="436.9" y1="294.6" x2="454.9" y2="276.6" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><circle cx="64" cy="16" r="7" fill="#9aa3ad"/><text x="76" y="21" font-size="14" fill="#1b1f24">아직 배정 전</text><line x1="250" y1="10" x2="262" y2="22" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="10" x2="262" y2="22" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><text x="268" y="21" font-size="14" fill="#1b1f24">centroid</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>k-means 진행 예: 1회차 배정</h2>
+  <div class="cols">
+    <div>
+      <div class="tw"><table class="sm tight"><tr><th>고객</th><th>centroid A까지</th><th>centroid B까지</th><th>배정</th></tr><tr><td>12347</td><td>2.18</td><td>3.55</td><td><span class="ca">A</span></td></tr><tr><td>12348</td><td>0.00</td><td>1.53</td><td><span class="ca">A</span></td></tr><tr><td>12349</td><td>1.05</td><td>2.53</td><td><span class="ca">A</span></td></tr><tr><td>12350</td><td>1.53</td><td>0.00</td><td><span class="cb">B</span></td></tr><tr><td>12351</td><td>1.59</td><td>0.12</td><td><span class="cb">B</span></td></tr><tr><td>12352</td><td>0.45</td><td>1.81</td><td><span class="ca">A</span></td></tr><tr><td>12353</td><td>1.19</td><td>0.35</td><td><span class="cb">B</span></td></tr><tr><td>12354</td><td>0.77</td><td>0.96</td><td><span class="ca">A</span></td></tr></table></div>
+      <ul class="mt">
+        <li>배정: <span class="ca">A</span> = <span class="nw">{12347, 12348, 12349, 12352, 12354}</span>, <span class="cb">B</span> = <span class="nw">{12350, 12351, 12353}</span></li>
+        <li>이 나눔의 WSS = 5.12, 두 군집 각각의 평균을 centroid로 계산</li>
+      </ul>
+    </div>
+    <div class="fig"><svg viewBox="0 0 520 372" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="104.4" y1="36" x2="104.4" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="104.4" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-2</text><line x1="225.5" y1="36" x2="225.5" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="225.5" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-1</text><line x1="346.6" y1="36" x2="346.6" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="346.6" y="340" font-size="13" fill="#5a6370" text-anchor="middle">0</text><line x1="467.7" y1="36" x2="467.7" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="467.7" y="340" font-size="13" fill="#5a6370" text-anchor="middle">1</text><line x1="56" y1="306.4" x2="504" y2="306.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="310.4" font-size="13" fill="#5a6370" text-anchor="end">-1</text><line x1="56" y1="202.4" x2="504" y2="202.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="206.4" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="56" y1="98.4" x2="504" y2="98.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="102.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><text x="280.0" y="360" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 R (클수록 오래전 구매)</text><text transform="translate(16,179.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 M (클수록 구매 금액 큼)</text><circle cx="93.5" cy="73.4" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="105.5" y="61.4" font-size="15" fill="#1b1f24" text-anchor="start">12347</text><circle cx="339.3" cy="155.6" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="351.3" y="145.6" font-size="15" fill="#1b1f24" text-anchor="start">12348</text><circle cx="234.0" cy="95.3" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="222.0" y="83.3" font-size="15" fill="#1b1f24" text-anchor="end">12349</text><rect x="438.9" y="278.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="439.9" y="311.6" font-size="15" fill="#1b1f24" text-anchor="end">12350</text><rect x="453.4" y="277.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="468.4" y="310.6" font-size="15" fill="#1b1f24" text-anchor="start">12351</text><circle cx="284.8" cy="157.7" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="284.8" y="183.7" font-size="15" fill="#1b1f24" text-anchor="middle">12352</text><rect x="407.4" y="254.7" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="400.4" y="251.7" font-size="15" fill="#1b1f24" text-anchor="end">12353</text><circle cx="424.1" cy="187.8" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="436.1" y="177.8" font-size="15" fill="#1b1f24" text-anchor="start">12354</text><line x1="330.3" y1="146.6" x2="348.3" y2="164.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="330.3" y1="164.6" x2="348.3" y2="146.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="330.3" y1="146.6" x2="348.3" y2="164.6" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="330.3" y1="164.6" x2="348.3" y2="146.6" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="436.9" y1="276.6" x2="454.9" y2="294.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="436.9" y1="294.6" x2="454.9" y2="276.6" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="436.9" y1="276.6" x2="454.9" y2="294.6" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><line x1="436.9" y1="294.6" x2="454.9" y2="276.6" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><circle cx="64" cy="16" r="7" fill="#2a78d6"/><text x="76" y="21" font-size="14" fill="#1b1f24">군집 A</text><rect x="148" y="9" width="14" height="14" rx="2" fill="#eb6834"/><text x="168" y="21" font-size="14" fill="#1b1f24">군집 B</text><line x1="250" y1="10" x2="262" y2="22" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="10" x2="262" y2="22" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><text x="268" y="21" font-size="14" fill="#1b1f24">centroid</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>k-means 진행 예: 2회차 갱신과 재배정</h2>
+  <div class="cols">
+    <div>
+      <ul>
+        <li>갱신: <span class="ca">A</span> = (-0.59, 0.66), <span class="cb">B</span> = (0.77, -0.72), 각 군집의 평균</li>
+      </ul>
+      <div class="tw"><table class="sm tight"><tr><th>고객</th><th>centroid A까지</th><th>centroid B까지</th><th>배정</th></tr><tr><td>12347</td><td>1.61</td><td>3.47</td><td><span class="ca">A</span></td></tr><tr><td>12348</td><td>0.57</td><td>1.44</td><td><span class="ca">A</span></td></tr><tr><td>12349</td><td>0.50</td><td>2.44</td><td><span class="ca">A</span></td></tr><tr><td>12350</td><td>2.03</td><td>0.09</td><td><span class="cb">B</span></td></tr><tr><td>12351</td><td>2.11</td><td>0.18</td><td><span class="cb">B</span></td></tr><tr><td>12352</td><td>0.24</td><td>1.72</td><td><span class="ca">A</span></td></tr><tr><td>12353</td><td>1.68</td><td>0.26</td><td><span class="cb">B</span></td></tr><tr><td>12354</td><td>1.33</td><td>0.87</td><td><span class="cb">B</span> ← 이동</td></tr></table></div>
+      <ul class="mt">
+        <li>재배정: 고객 12354가 A에서 B로 이동</li>
+        <li>새 나눔의 WSS: 5.12 → 3.46</li>
+      </ul>
+    </div>
+    <div class="fig"><svg viewBox="0 0 520 372" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="104.4" y1="36" x2="104.4" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="104.4" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-2</text><line x1="225.5" y1="36" x2="225.5" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="225.5" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-1</text><line x1="346.6" y1="36" x2="346.6" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="346.6" y="340" font-size="13" fill="#5a6370" text-anchor="middle">0</text><line x1="467.7" y1="36" x2="467.7" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="467.7" y="340" font-size="13" fill="#5a6370" text-anchor="middle">1</text><line x1="56" y1="306.4" x2="504" y2="306.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="310.4" font-size="13" fill="#5a6370" text-anchor="end">-1</text><line x1="56" y1="202.4" x2="504" y2="202.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="206.4" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="56" y1="98.4" x2="504" y2="98.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="102.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><text x="280.0" y="360" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 R (클수록 오래전 구매)</text><text transform="translate(16,179.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 M (클수록 구매 금액 큼)</text><circle cx="93.5" cy="73.4" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="105.5" y="61.4" font-size="15" fill="#1b1f24" text-anchor="start">12347</text><circle cx="339.3" cy="155.6" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="351.3" y="145.6" font-size="15" fill="#1b1f24" text-anchor="start">12348</text><circle cx="234.0" cy="95.3" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="222.0" y="83.3" font-size="15" fill="#1b1f24" text-anchor="end">12349</text><rect x="438.9" y="278.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="439.9" y="311.6" font-size="15" fill="#1b1f24" text-anchor="end">12350</text><rect x="453.4" y="277.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="468.4" y="310.6" font-size="15" fill="#1b1f24" text-anchor="start">12351</text><circle cx="284.8" cy="157.7" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="284.8" y="183.7" font-size="15" fill="#1b1f24" text-anchor="middle">12352</text><rect x="407.4" y="254.7" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="400.4" y="251.7" font-size="15" fill="#1b1f24" text-anchor="end">12353</text><circle cx="424.1" cy="187.8" r="15" fill="none" stroke="#1b1f24" stroke-width="1.5" stroke-dasharray="4 3"/><rect x="417.1" y="180.8" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="436.1" y="177.8" font-size="15" fill="#1b1f24" text-anchor="start">12354</text><line x1="266.2" y1="125.0" x2="284.2" y2="143.0" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="266.2" y1="143.0" x2="284.2" y2="125.0" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="266.2" y1="125.0" x2="284.2" y2="143.0" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="266.2" y1="143.0" x2="284.2" y2="125.0" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="431.2" y1="268.3" x2="449.2" y2="286.3" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="431.2" y1="286.3" x2="449.2" y2="268.3" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="431.2" y1="268.3" x2="449.2" y2="286.3" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><line x1="431.2" y1="286.3" x2="449.2" y2="268.3" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><circle cx="64" cy="16" r="7" fill="#2a78d6"/><text x="76" y="21" font-size="14" fill="#1b1f24">군집 A</text><rect x="148" y="9" width="14" height="14" rx="2" fill="#eb6834"/><text x="168" y="21" font-size="14" fill="#1b1f24">군집 B</text><line x1="250" y1="10" x2="262" y2="22" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="10" x2="262" y2="22" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><text x="268" y="21" font-size="14" fill="#1b1f24">centroid</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>k-means 진행 예: 3회차와 종료</h2>
+  <div class="cols">
+    <div>
+      <ul>
+        <li>갱신: <span class="ca">A</span> = (-0.90, 0.79), 고객 4명의 평균 · <span class="cb">B</span> = (0.74, -0.51), 고객 4명의 평균</li>
+        <li>재배정: 바뀌는 고객이 없으므로 종료</li>
+        <li>WSS: 5.12 → 3.46, 배정이 바뀌지 않아 그대로</li>
+        <li>결과
+          <ul>
+            <li><span class="ca">A</span> <span class="nw">{12347, 12348, 12349, 12352}</span>: 2~75일 전에 산 고객</li>
+            <li><span class="cb">B</span> <span class="nw">{12350, 12351, 12353, 12354}</span>: 200일 넘게 전에 산 고객</li>
+          </ul></li>
+      </ul>
+    </div>
+    <div class="fig"><svg viewBox="0 0 520 372" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="104.4" y1="36" x2="104.4" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="104.4" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-2</text><line x1="225.5" y1="36" x2="225.5" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="225.5" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-1</text><line x1="346.6" y1="36" x2="346.6" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="346.6" y="340" font-size="13" fill="#5a6370" text-anchor="middle">0</text><line x1="467.7" y1="36" x2="467.7" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="467.7" y="340" font-size="13" fill="#5a6370" text-anchor="middle">1</text><line x1="56" y1="306.4" x2="504" y2="306.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="310.4" font-size="13" fill="#5a6370" text-anchor="end">-1</text><line x1="56" y1="202.4" x2="504" y2="202.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="206.4" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="56" y1="98.4" x2="504" y2="98.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="102.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><text x="280.0" y="360" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 R (클수록 오래전 구매)</text><text transform="translate(16,179.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 M (클수록 구매 금액 큼)</text><circle cx="93.5" cy="73.4" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="105.5" y="61.4" font-size="15" fill="#1b1f24" text-anchor="start">12347</text><circle cx="339.3" cy="155.6" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="351.3" y="145.6" font-size="15" fill="#1b1f24" text-anchor="start">12348</text><circle cx="234.0" cy="95.3" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="222.0" y="83.3" font-size="15" fill="#1b1f24" text-anchor="end">12349</text><rect x="438.9" y="278.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="439.9" y="311.6" font-size="15" fill="#1b1f24" text-anchor="end">12350</text><rect x="453.4" y="277.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="468.4" y="310.6" font-size="15" fill="#1b1f24" text-anchor="start">12351</text><circle cx="284.8" cy="157.7" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="284.8" y="183.7" font-size="15" fill="#1b1f24" text-anchor="middle">12352</text><rect x="407.4" y="254.7" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="400.4" y="251.7" font-size="15" fill="#1b1f24" text-anchor="end">12353</text><rect x="417.1" y="180.8" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="436.1" y="177.8" font-size="15" fill="#1b1f24" text-anchor="start">12354</text><line x1="228.9" y1="111.4" x2="246.9" y2="129.4" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="228.9" y1="129.4" x2="246.9" y2="111.4" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="228.9" y1="111.4" x2="246.9" y2="129.4" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="228.9" y1="129.4" x2="246.9" y2="111.4" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="427.2" y1="245.9" x2="445.2" y2="263.9" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="427.2" y1="263.9" x2="445.2" y2="245.9" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="427.2" y1="245.9" x2="445.2" y2="263.9" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><line x1="427.2" y1="263.9" x2="445.2" y2="245.9" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><circle cx="64" cy="16" r="7" fill="#2a78d6"/><text x="76" y="21" font-size="14" fill="#1b1f24">군집 A</text><rect x="148" y="9" width="14" height="14" rx="2" fill="#eb6834"/><text x="168" y="21" font-size="14" fill="#1b1f24">군집 B</text><line x1="250" y1="10" x2="262" y2="22" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="10" x2="262" y2="22" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><text x="268" y="21" font-size="14" fill="#1b1f24">centroid</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>반복할수록 WSS가 줄어드는 이유</h2>
+  <ul>
+    <li>배정 단계: 각 대상을 가장 가까운 centroid로 옮기면 그 대상의 거리 제곱은 같거나 줄어듦</li>
+    <li>갱신 단계: 군집 안 거리 제곱의 합 \(\sum_{i\in C_k}\lVert x_i-c\rVert^2\)를 가장 작게 하는 점 \(c\)는 군집의 평균 \(\mu_k\)</li>
+    <li>두 단계 모두 WSS를 늘리지 않음</li>
+    <li>나눔의 수는 유한하므로 반복은 반드시 멈춤</li>
+  </ul>
+  <div class="ex"><span class="t">예</span>고객 8명의 WSS: 5.12 → 3.46, 배정이 바뀌지 않아 멈춤</div>
+</section>
+
+<section class="slide">
+  <h2>시작점과 local optimum</h2>
+  <div class="cols">
+    <div>
+      <ul>
+        <li>멈춘 결과가 WSS가 가장 작은 나눔이라는 보장은 없음: local optimum</li>
+        <li>예: 시작 centroid를 고객 12347, 12348로 두면
+          <ul>
+            <li><span class="nw">{12347, 12349}</span> 대 나머지 6명에서 멈춤</li>
+            <li>WSS 4.07 &gt; 3.46</li>
+          </ul></li>
+        <li>대응: 시작점을 여러 번 바꿔 돌리고 WSS가 가장 작은 결과를 씀
+          <ul><li>코드: <code>KMeans(n_clusters=4, n_init=10, random_state=0)</code></li></ul></li>
+      </ul>
+    </div>
+    <div class="fig"><svg viewBox="0 0 520 372" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="104.4" y1="36" x2="104.4" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="104.4" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-2</text><line x1="225.5" y1="36" x2="225.5" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="225.5" y="340" font-size="13" fill="#5a6370" text-anchor="middle">-1</text><line x1="346.6" y1="36" x2="346.6" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="346.6" y="340" font-size="13" fill="#5a6370" text-anchor="middle">0</text><line x1="467.7" y1="36" x2="467.7" y2="322" stroke="#d5dae1" stroke-width="1"/><text x="467.7" y="340" font-size="13" fill="#5a6370" text-anchor="middle">1</text><line x1="56" y1="306.4" x2="504" y2="306.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="310.4" font-size="13" fill="#5a6370" text-anchor="end">-1</text><line x1="56" y1="202.4" x2="504" y2="202.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="206.4" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="56" y1="98.4" x2="504" y2="98.4" stroke="#d5dae1" stroke-width="1"/><text x="48" y="102.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><text x="280.0" y="360" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 R (클수록 오래전 구매)</text><text transform="translate(16,179.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">로그·표준화 M (클수록 구매 금액 큼)</text><circle cx="93.5" cy="73.4" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="105.5" y="61.4" font-size="15" fill="#1b1f24" text-anchor="start">12347</text><rect x="332.3" y="148.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="351.3" y="145.6" font-size="15" fill="#1b1f24" text-anchor="start">12348</text><circle cx="234.0" cy="95.3" r="7.5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="222.0" y="83.3" font-size="15" fill="#1b1f24" text-anchor="end">12349</text><rect x="438.9" y="278.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="439.9" y="311.6" font-size="15" fill="#1b1f24" text-anchor="end">12350</text><rect x="453.4" y="277.6" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="468.4" y="310.6" font-size="15" fill="#1b1f24" text-anchor="start">12351</text><rect x="277.8" y="150.7" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="284.8" y="183.7" font-size="15" fill="#1b1f24" text-anchor="middle">12352</text><rect x="407.4" y="254.7" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="400.4" y="251.7" font-size="15" fill="#1b1f24" text-anchor="end">12353</text><rect x="417.1" y="180.8" width="14" height="14" rx="2" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><text x="436.1" y="177.8" font-size="15" fill="#1b1f24" text-anchor="start">12354</text><line x1="154.8" y1="75.4" x2="172.8" y2="93.4" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="154.8" y1="93.4" x2="172.8" y2="75.4" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="154.8" y1="75.4" x2="172.8" y2="93.4" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="154.8" y1="93.4" x2="172.8" y2="75.4" stroke="#2a78d6" stroke-width="3.2" stroke-linecap="round"/><line x1="385.8" y1="213.2" x2="403.8" y2="231.2" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="385.8" y1="231.2" x2="403.8" y2="213.2" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/><line x1="385.8" y1="213.2" x2="403.8" y2="231.2" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><line x1="385.8" y1="231.2" x2="403.8" y2="213.2" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round"/><circle cx="64" cy="16" r="7" fill="#2a78d6"/><text x="76" y="21" font-size="14" fill="#1b1f24">군집 A</text><rect x="148" y="9" width="14" height="14" rx="2" fill="#eb6834"/><text x="168" y="21" font-size="14" fill="#1b1f24">군집 B</text><line x1="250" y1="10" x2="262" y2="22" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><line x1="250" y1="10" x2="262" y2="22" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><line x1="250" y1="22" x2="262" y2="10" stroke="#1b1f24" stroke-width="2.4" stroke-linecap="round"/><text x="268" y="21" font-size="14" fill="#1b1f24">centroid</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>계층 군집의 아이디어</h2>
+  <ul>
+    <li>시작: 대상 하나하나를 각각 하나의 군집으로 둠</li>
+    <li>반복: 가장 가까운 두 군집을 합침, 군집이 하나 남을 때까지
+      <ul><li>대상 \(n\)개이면 \(n-1\)번 합침</li></ul></li>
+    <li>기록: 합친 순서와 그때의 거리를 dendrogram으로 남김</li>
+    <li>군집 수: 미리 정하지 않음, dendrogram을 잘라 정함</li>
+    <li>"가장 가까운 두 군집"의 기준: 군집 사이 거리, 곧 linkage</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>군집 사이 거리: linkage</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">linkage</th><th class="l">두 군집 \(A\), \(B\) 사이의 거리</th><th class="l">특징</th></tr>
+    <tr><td class="l">single</td><td class="l">가장 가까운 대상 쌍의 거리 \(\min_{i\in A,\,j\in B}d(x_i,x_j)\)</td><td class="l">길게 이어진 군집, 한 군집이 커지기 쉬움</td></tr>
+    <tr><td class="l">complete</td><td class="l">가장 먼 대상 쌍의 거리 \(\max_{i\in A,\,j\in B}d(x_i,x_j)\)</td><td class="l">지름이 작은 군집</td></tr>
+    <tr><td class="l">average</td><td class="l">모든 대상 쌍 거리의 평균 \(\frac{1}{n_An_B}\sum_{i\in A}\sum_{j\in B}d(x_i,x_j)\)</td><td class="l">single과 complete의 중간</td></tr>
+    <tr><td class="l">Ward</td><td class="l">합쳤을 때 늘어나는 WSS</td><td class="l">크기가 비슷한 군집, k-means와 같은 WSS 기준</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>코드: <code>linkage(X, method="ward")</code>, method에 single·complete·average·ward</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Ward linkage의 정의</h2>
+  <div class="def"><span class="t">정의</span>두 군집 \(A\), \(B\)를 합칠 때 늘어나는 WSS
+    \[\Delta(A,B)=\mathrm{WSS}(A\cup B)-\mathrm{WSS}(A)-\mathrm{WSS}(B)=\frac{n_An_B}{n_A+n_B}\lVert\mu_A-\mu_B\rVert^2\]</div>
+  <ul>
+    <li>매 단계 \(\Delta\)가 가장 작은 두 군집을 합침</li>
+    <li>대상 둘을 합칠 때: \(n_A=n_B=1\)이므로 \(\Delta=\tfrac12\,d(x_i,x_j)^2\)</li>
+  </ul>
+  <div class="ex"><span class="t">예</span>고객 12350 (0.82, −0.80)과 12351 (0.94, −0.79)
+    <ul><li>\(d^2=0.12^2+0.01^2=0.0145\), \(\Delta=0.0145/2=0.007\)</li></ul></div>
+</section>
+
+<section class="slide">
+  <h2>계층 군집 진행 예: 합치는 순서</h2>
+  <p>같은 고객 8명, 로그·표준화한 R과 M, Ward linkage</p>
+  <div class="tw"><table class="full sm">
+    <tr><th>단계</th><th class="l">합친 두 군집</th><th>\(\Delta\)</th><th>합친 뒤 WSS</th><th>높이 \(\sqrt{2\Delta}\)</th><th>군집 수</th></tr>
+    <tr><td>1</td><td class="l"><span class="nw">{12350}</span>, <span class="nw">{12351}</span></td><td>0.007</td><td>0.007</td><td>0.12</td><td>7</td></tr><tr><td>2</td><td class="l"><span class="nw">{12348}</span>, <span class="nw">{12352}</span></td><td>0.101</td><td>0.109</td><td>0.45</td><td>6</td></tr><tr><td>3</td><td class="l"><span class="nw">{12353}</span>, <span class="nw">{12350, 12351}</span></td><td>0.102</td><td>0.211</td><td>0.45</td><td>5</td></tr><tr><td>4</td><td class="l"><span class="nw">{12349}</span>, <span class="nw">{12348, 12352}</span></td><td>0.509</td><td>0.720</td><td>1.01</td><td>4</td></tr><tr><td>5</td><td class="l"><span class="nw">{12354}</span>, <span class="nw">{12350, 12351, 12353}</span></td><td>0.568</td><td>1.288</td><td>1.07</td><td>3</td></tr><tr><td>6</td><td class="l"><span class="nw">{12347}</span>, <span class="nw">{12348, 12349, 12352}</span></td><td>2.169</td><td>3.457</td><td>2.08</td><td>2</td></tr><tr><td>7</td><td class="l">두 군집 전체</td><td>8.704</td><td>12.161</td><td>4.17</td><td>1</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>합친 뒤 WSS: 그때까지의 \(\Delta\)를 모두 더한 값, 마지막 12.16은 한 군집일 때의 WSS</li>
+    <li>군집 2개일 때 WSS 3.46: k-means 예제의 결과와 같은 나눔</li>
+    <li>높이: dendrogram 그림의 세로축 값, \(\Delta\)가 클수록 높음</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>dendrogram 읽기</h2>
+  <div class="cols">
+    <ul>
+      <li>가로: 대상, 세로: 높이 \(\sqrt{2\Delta}\), 코드 <code>dendrogram(Z)</code>와 같은 축</li>
+      <li>두 가지가 만나는 높이: 그 두 군집을 합친 단계의 \(\sqrt{2\Delta}\), 합칠 때 늘어난 WSS가 클수록 높음</li>
+      <li>낮은 곳에서 만난 대상끼리 비슷함
+        <ul><li>12350과 12351: 0.12</li></ul></li>
+      <li>높은 곳에서 만난 가지끼리 서로 다름
+        <ul><li>마지막 합치기: 4.17</li></ul></li>
+    </ul>
+    <div class="fig"><svg viewBox="0 0 470 360" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="52" y1="290.0" x2="454" y2="290.0" stroke="#d5dae1" stroke-width="1"/><text x="44" y="294.0" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="52" y1="230.4" x2="454" y2="230.4" stroke="#d5dae1" stroke-width="1"/><text x="44" y="234.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><line x1="52" y1="170.9" x2="454" y2="170.9" stroke="#d5dae1" stroke-width="1"/><text x="44" y="174.9" font-size="13" fill="#5a6370" text-anchor="end">2</text><line x1="52" y1="111.3" x2="454" y2="111.3" stroke="#d5dae1" stroke-width="1"/><text x="44" y="115.3" font-size="13" fill="#5a6370" text-anchor="end">3</text><line x1="52" y1="51.7" x2="454" y2="51.7" stroke="#d5dae1" stroke-width="1"/><text x="44" y="55.7" font-size="13" fill="#5a6370" text-anchor="end">4</text><text transform="translate(16,153.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">높이 √(2Δ)</text><path d="M175.4,290.0 V282.9 H227.1 V290.0" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M382.3,290.0 V263.2 H434.0 V290.0" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M123.7,290.0 V263.2 H201.3 V282.9" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M330.6,290.0 V229.8 H408.1 V263.2" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M72.0,290.0 V226.3 H162.5 V263.2" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M278.9,290.0 V166.1 H369.4 V229.8" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M117.2,226.3 V41.6 H324.1 V166.1" fill="none" stroke="#1b1f24" stroke-width="2"/><text transform="translate(76.0,300) rotate(60)" font-size="13" fill="#1b1f24">12354</text><text transform="translate(127.7,300) rotate(60)" font-size="13" fill="#1b1f24">12353</text><text transform="translate(179.4,300) rotate(60)" font-size="13" fill="#1b1f24">12350</text><text transform="translate(231.1,300) rotate(60)" font-size="13" fill="#1b1f24">12351</text><text transform="translate(282.9,300) rotate(60)" font-size="13" fill="#1b1f24">12347</text><text transform="translate(334.6,300) rotate(60)" font-size="13" fill="#1b1f24">12349</text><text transform="translate(386.3,300) rotate(60)" font-size="13" fill="#1b1f24">12348</text><text transform="translate(438.0,300) rotate(60)" font-size="13" fill="#1b1f24">12352</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>dendrogram 자르기</h2>
+  <div class="cols">
+    <ul>
+      <li>가로선으로 자르면 선 아래 가지 수 = 군집 수</li>
+      <li>높이가 크게 뛰는 곳에서 자름: 1.07, 2.08, 4.17
+        <ul>
+          <li>군집 2개: 2.08과 4.17 사이, <span class="nw">{12350, 12351, 12353, 12354}</span>와 나머지 4명</li>
+          <li>군집 3개: 1.07과 2.08 사이, 고객 12347이 따로 떨어짐</li>
+        </ul></li>
+      <li>코드: <code>fcluster(Z, t=4, criterion="maxclust")</code>, 군집이 4개가 되는 높이에서 자름</li>
+    </ul>
+    <div class="fig"><svg viewBox="0 0 470 360" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="52" y1="290.0" x2="454" y2="290.0" stroke="#d5dae1" stroke-width="1"/><text x="44" y="294.0" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="52" y1="230.4" x2="454" y2="230.4" stroke="#d5dae1" stroke-width="1"/><text x="44" y="234.4" font-size="13" fill="#5a6370" text-anchor="end">1</text><line x1="52" y1="170.9" x2="454" y2="170.9" stroke="#d5dae1" stroke-width="1"/><text x="44" y="174.9" font-size="13" fill="#5a6370" text-anchor="end">2</text><line x1="52" y1="111.3" x2="454" y2="111.3" stroke="#d5dae1" stroke-width="1"/><text x="44" y="115.3" font-size="13" fill="#5a6370" text-anchor="end">3</text><line x1="52" y1="51.7" x2="454" y2="51.7" stroke="#d5dae1" stroke-width="1"/><text x="44" y="55.7" font-size="13" fill="#5a6370" text-anchor="end">4</text><text transform="translate(16,153.0) rotate(-90)" font-size="14" fill="#5a6370" text-anchor="middle">높이 √(2Δ)</text><path d="M175.4,290.0 V282.9 H227.1 V290.0" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M382.3,290.0 V263.2 H434.0 V290.0" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M123.7,290.0 V263.2 H201.3 V282.9" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M330.6,290.0 V229.8 H408.1 V263.2" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M72.0,290.0 V226.3 H162.5 V263.2" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M278.9,290.0 V166.1 H369.4 V229.8" fill="none" stroke="#1b1f24" stroke-width="2"/><path d="M117.2,226.3 V41.6 H324.1 V166.1" fill="none" stroke="#1b1f24" stroke-width="2"/><text transform="translate(76.0,300) rotate(60)" font-size="13" fill="#1b1f24">12354</text><text transform="translate(127.7,300) rotate(60)" font-size="13" fill="#1b1f24">12353</text><text transform="translate(179.4,300) rotate(60)" font-size="13" fill="#1b1f24">12350</text><text transform="translate(231.1,300) rotate(60)" font-size="13" fill="#1b1f24">12351</text><text transform="translate(282.9,300) rotate(60)" font-size="13" fill="#1b1f24">12347</text><text transform="translate(334.6,300) rotate(60)" font-size="13" fill="#1b1f24">12349</text><text transform="translate(386.3,300) rotate(60)" font-size="13" fill="#1b1f24">12348</text><text transform="translate(438.0,300) rotate(60)" font-size="13" fill="#1b1f24">12352</text><line x1="52" y1="105.3" x2="454" y2="105.3" stroke="#eb6834" stroke-width="2" stroke-dasharray="6 4"/><text x="450" y="99.3" font-size="13" fill="#1b1f24" text-anchor="end">군집 2개</text><line x1="52" y1="194.7" x2="454" y2="194.7" stroke="#eb6834" stroke-width="2" stroke-dasharray="6 4"/><text x="450" y="188.7" font-size="13" fill="#1b1f24" text-anchor="end">군집 3개</text></svg></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>k-means와 계층 군집의 비교</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">항목</th><th class="l">k-means</th><th class="l">계층 군집 (Ward)</th></tr>
+    <tr><td class="l">군집 수</td><td class="l">미리 정함</td><td class="l">dendrogram을 잘라 나중에 정함</td></tr>
+    <tr><td class="l">기준</td><td class="l">전체 WSS 최소</td><td class="l">매 단계 WSS 증가 최소</td></tr>
+    <tr><td class="l">결과의 재현성</td><td class="l">시작점에 따라 달라질 수 있음, <code>n_init</code>로 보완</td><td class="l">같은 자료면 늘 같은 결과</td></tr>
+    <tr><td class="l">계산량</td><td class="l">반복마다 대상 \(n\) × 군집 \(K\)번 거리 계산</td><td class="l">대상 쌍 \(n(n-1)/2\)개의 거리, 고객 5,839명이면 약 1,704만 쌍</td></tr>
+    <tr><td class="l">출력</td><td class="l">군집 번호, centroid</td><td class="l">합치는 순서, dendrogram</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>대상이 많으면 k-means, 군집이 합쳐지는 구조를 보려면 계층 군집</li>
+    <li>두 방법을 함께 돌려 결과가 비슷한지 확인</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>군집 수 정하기: WSS 곡선</h2>
+  <div class="cols">
+    <div>
+      <div class="tw"><table class="sm">
+        <tr><th>k</th><th>WSS</th><th>감소율</th></tr>
+        <tr><td>1</td><td>17,514</td><td></td></tr>
+        <tr><td>2</td><td>8,546</td><td>−51.2%</td></tr>
+        <tr><td>3</td><td>6,332</td><td>−25.9%</td></tr>
+        <tr><td><b>4</b></td><td><b>4,926</b></td><td><b>−22.2%</b></td></tr>
+        <tr><td>5</td><td>4,106</td><td>−16.7%</td></tr>
+        <tr><td>6</td><td>3,561</td><td>−13.3%</td></tr>
+        <tr><td>7</td><td>3,191</td><td>−10.4%</td></tr>
+        <tr><td>8</td><td>2,897</td><td>−9.2%</td></tr>
+      </table></div>
+    </div>
+    <div class="fig sm"><svg viewBox="0 0 470 300" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="64" y1="252.0" x2="454" y2="252.0" stroke="#d5dae1" stroke-width="1"/><text x="56" y="256.0" font-size="13" fill="#5a6370" text-anchor="end">0</text><line x1="64" y1="186.4" x2="454" y2="186.4" stroke="#d5dae1" stroke-width="1"/><text x="56" y="190.4" font-size="13" fill="#5a6370" text-anchor="end">5,000</text><line x1="64" y1="120.9" x2="454" y2="120.9" stroke="#d5dae1" stroke-width="1"/><text x="56" y="124.9" font-size="13" fill="#5a6370" text-anchor="end">10,000</text><line x1="64" y1="55.3" x2="454" y2="55.3" stroke="#d5dae1" stroke-width="1"/><text x="56" y="59.3" font-size="13" fill="#5a6370" text-anchor="end">15,000</text><text x="64.0" y="272" font-size="13" fill="#5a6370" text-anchor="middle">1</text><text x="119.7" y="272" font-size="13" fill="#5a6370" text-anchor="middle">2</text><text x="175.4" y="272" font-size="13" fill="#5a6370" text-anchor="middle">3</text><text x="231.1" y="272" font-size="13" fill="#5a6370" text-anchor="middle">4</text><text x="286.9" y="272" font-size="13" fill="#5a6370" text-anchor="middle">5</text><text x="342.6" y="272" font-size="13" fill="#5a6370" text-anchor="middle">6</text><text x="398.3" y="272" font-size="13" fill="#5a6370" text-anchor="middle">7</text><text x="454.0" y="272" font-size="13" fill="#5a6370" text-anchor="middle">8</text><text x="259.0" y="292" font-size="14" fill="#5a6370" text-anchor="middle">군집 수 k</text><polyline points="64.0,22.4 119.7,139.9 175.4,169.0 231.1,187.4 286.9,198.2 342.6,205.3 398.3,210.2 454.0,214.0" fill="none" stroke="#2a78d6" stroke-width="2"/><circle cx="64.0" cy="22.4" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="119.7" cy="139.9" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="175.4" cy="169.0" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="231.1" cy="187.4" r="8" fill="#eb6834" stroke="#ffffff" stroke-width="2"/><circle cx="286.9" cy="198.2" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="342.6" cy="205.3" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="398.3" cy="210.2" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><circle cx="454.0" cy="214.0" r="5" fill="#2a78d6" stroke="#ffffff" stroke-width="2"/><text x="243.1" y="175.4" font-size="13" fill="#1b1f24">k = 4, WSS 4,926</text></svg></div>
+  </div>
+  <ul class="mt">
+    <li>elbow: k를 늘리면 WSS는 늘 줄어들므로, 하나 늘려도 크게 줄지 않기 시작하는 k를 고름</li>
+    <li>이 자료: k = 4까지 20% 넘게 줄고 k = 5부터 17% 이하로 줄어 k = 4</li>
+    <li>정해진 기준값은 없음, 결정에 쓸 군집이 나오는지 함께 확인</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>군집 프로필 읽기</h2>
+  <p>고객 5,839명, k-means \(K=4\), 군집별 중앙값</p>
+  <div class="tw"><table class="full">
+    <tr><th class="l">이름</th><th>고객 수</th><th>마지막 구매</th><th>주문 수</th><th>구매 금액(파운드)</th><th>매출 비중</th></tr>
+    <tr><td class="l">우수 고객</td><td>1,161명</td><td>16일 전</td><td>13회</td><td>4,922</td><td>73%</td></tr>
+    <tr><td class="l">최근 소액 고객</td><td>1,232명</td><td>23일 전</td><td>3회</td><td>717</td><td>6%</td></tr>
+    <tr><td class="l">이탈 위험 고객</td><td>1,468명</td><td>178일 전</td><td>5회</td><td>1,455</td><td>17%</td></tr>
+    <tr><td class="l">이탈 고객</td><td>1,978명</td><td>400일 전</td><td>1회</td><td>270</td><td>4%</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>군집 번호 대신 특징으로 이름을 붙임</li>
+    <li>치우친 분포이므로 평균보다 중앙값이 대표값으로 나음</li>
+    <li>재구매 쿠폰 대상: 구매 이력은 있으나 여섯 달 가까이 사지 않은 이탈 위험 고객 1,468명</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>해석 시 주의</h2>
+  <ul>
+    <li>변수 선택이 군집을 정함: 넣는 변수가 달라지면 다른 군집이 나옴</li>
+    <li>척도와 극단값: 로그 변환 없이 표준화만 하면 구매 금액이 아주 큰 고객 4명과 37명이 군집 하나씩을 차지함</li>
+    <li>군집 번호는 이름표: 다시 돌리거나 패키지 판이 바뀌면 번호가 바뀔 수 있음</li>
+    <li>방법에 따라 경계가 다름
+      <ul>
+        <li>k-means와 Ward가 같은 무리로 묶은 고객: 83%</li>
+        <li>이탈 위험 고객 1,468명 가운데 Ward의 한 군집에 함께 든 고객: 1,013명(69%)</li>
+      </ul></li>
+    <li>군집은 결정의 출발점: 쿠폰의 효과는 군집 안 무작위 실험으로 확인</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>정리</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">개념</th><th class="l">정의</th><th class="l">예제의 값</th></tr>
+    <tr><td class="l">유클리드 거리</td><td class="l">\(\sqrt{\sum_j(x_j-y_j)^2}\)</td><td class="l">고객 두 명: 4,781, 척도를 맞춘 뒤 4.28</td></tr>
+    <tr><td class="l">척도 맞추기</td><td class="l">\(\log(1+x)\) 뒤 표준화</td><td class="l">R·F·M 모두 평균 0, 표준편차 1</td></tr>
+    <tr><td class="l">WSS</td><td class="l">대상과 자기 centroid 거리 제곱의 합</td><td class="l">\(K=4\)에서 4,926</td></tr>
+    <tr><td class="l">k-means</td><td class="l">배정과 centroid 갱신을 배정이 바뀌지 않을 때까지 반복</td><td class="l">고객 8명: WSS 5.12 → 3.46</td></tr>
+    <tr><td class="l">Ward 계층 군집</td><td class="l">WSS 증가 \(\Delta\)가 가장 작은 두 군집을 합치기를 반복</td><td class="l">군집 2개에서 k-means와 같은 나눔</td></tr>
+    <tr><td class="l">군집 수</td><td class="l">WSS 감소율과 결정에 쓸 수 있는지로 정함</td><td class="l">\(K=4\)</td></tr>
+  </table></div>
+</section>
+
+</main>
+</div>
+
+<nav class="bar" aria-label="슬라이드 이동">
+  <button type="button" id="prev" aria-label="이전">‹ 이전</button>
+  <span class="count" id="count">1 / 1</span>
+  <button type="button" id="next" aria-label="다음">다음 ›</button>
+  <span class="sep"></span>
+  <button type="button" id="toc-btn">목차</button>
+  <button type="button" id="fs-btn">전체 화면</button>
+</nav>
+<aside class="toc" id="toc" hidden>
+  <h3>목차</h3>
+  <ol id="toc-list"></ol>
+  <p class="ext">교재: <a href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week10_clustering.ipynb">10주차 교재 (Colab)</a></p>
+  <p class="ext">이동: ← → 키, 스페이스, 화면 밀기 · 목차: T 키 · 전체 화면: F 키</p>
+</aside>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var root = document.documentElement;
+  var deck = document.querySelector(".deck");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var N = slides.length, cur = 0;
+
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
+      macros: { "\\supp": "\\mathrm{supp}", "\\conf": "\\mathrm{conf}", "\\lift": "\\mathrm{lift}" },
+      throwOnError: false
+    });
+    // 수식 바로 뒤의 조사·문장부호가 다음 줄로 떨어지지 않게 묶음
+    document.querySelectorAll(".katex").forEach(function (k) {
+      if (k.closest(".katex-display")) return;
+      var w = (k.parentElement.tagName === "SPAN" && !k.parentElement.className) ? k.parentElement : k;
+      var t = w.nextSibling;
+      if (!t || t.nodeType !== 3) return;
+      var m = t.data.match(/^[^\s]+/);
+      if (!m) return;
+      var glue = document.createElement("span");
+      glue.className = "nw";
+      w.parentNode.insertBefore(glue, w);
+      glue.appendChild(w);
+      glue.appendChild(document.createTextNode(m[0]));
+      t.data = t.data.slice(m[0].length);
+    });
+  }
+
+  var tocList = document.getElementById("toc-list");
+  slides.forEach(function (s, i) {
+    if (i > 0) {
+      var pg = document.createElement("span");
+      pg.className = "pg";
+      pg.textContent = (i + 1) + " / " + N;
+      s.appendChild(pg);
+    }
+    var h = s.querySelector("h2, h1");
+    var li = document.createElement("li");
+    var a = document.createElement("a");
+    a.href = "#" + (i + 1);
+    a.textContent = h ? h.textContent : "슬라이드 " + (i + 1);
+    a.addEventListener("click", function (e) { e.preventDefault(); go(i); toggleToc(false); });
+    li.appendChild(a);
+    tocList.appendChild(li);
+  });
+  var tocLinks = tocList.querySelectorAll("a");
+
+  function fit() {
+    var reflow = window.innerWidth < 700 && window.innerHeight > window.innerWidth;
+    root.classList.toggle("reflow", reflow);
+    if (reflow) { deck.style.transform = ""; return; }
+    var bar = root.classList.contains("fs") ? 0 : 52;
+    var W = window.innerWidth, H = window.innerHeight - bar;
+    var s = Math.min(W / 1280, H / 720);
+    deck.style.transform = "translate(" + (W - 1280 * s) / 2 + "px," + (H - 720 * s) / 2 + "px) scale(" + s + ")";
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(N - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle("cur", j === cur); });
+    tocLinks.forEach(function (a, j) { a.classList.toggle("on", j === cur); });
+    document.getElementById("count").textContent = (cur + 1) + " / " + N;
+    document.getElementById("prev").disabled = cur === 0;
+    document.getElementById("next").disabled = cur === N - 1;
+    document.querySelector(".progress span").style.width = ((cur + 1) / N * 100) + "%";
+    if (location.hash !== "#" + (cur + 1)) history.replaceState(null, "", "#" + (cur + 1));
+    if (root.classList.contains("reflow")) window.scrollTo(0, 0);
+  }
+  var toc = document.getElementById("toc");
+  function toggleToc(on) {
+    if (on === undefined) on = toc.hidden;
+    toc.hidden = !on;
+  }
+  function toggleFs() {
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (root.requestFullscreen) { root.requestFullscreen().catch(function () {}); }
+  }
+
+  document.getElementById("prev").addEventListener("click", function () { go(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { go(cur + 1); });
+  document.getElementById("toc-btn").addEventListener("click", function () { toggleToc(); });
+  document.getElementById("fs-btn").addEventListener("click", toggleFs);
+  document.addEventListener("fullscreenchange", function () {
+    root.classList.toggle("fs", !!document.fullscreenElement);
+    fit();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "PageDown" || k === " " || k === "Enter") go(cur + 1);
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp" || k === "Backspace") go(cur - 1);
+    else if (k === "Home") go(0);
+    else if (k === "End") go(N - 1);
+    else if (k === "f" || k === "F") toggleFs();
+    else if (k === "t" || k === "T") toggleToc();
+    else if (k === "Escape") toggleToc(false);
+    else return;
+    e.preventDefault();
+  });
+  var x0 = null, y0 = null;
+  document.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > 1.5 * Math.abs(dy)) go(dx < 0 ? cur + 1 : cur - 1);
+    x0 = null;
+  });
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", function () {
+    var n = parseInt(location.hash.slice(1), 10);
+    if (n >= 1 && n <= N && n - 1 !== cur) go(n - 1);
+  });
+
+  var start = parseInt(location.hash.slice(1), 10);
+  fit();
+  go(start >= 1 && start <= N ? start - 1 : 0);
+});
+</script>
+</body>
+</html>

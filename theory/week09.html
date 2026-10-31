@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>9주차 이론 — 연관규칙</title>
+<script>document.documentElement.classList.add("js");</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --surround: #1e2228; --paper: #ffffff; --ink: #1b1f24; --ink-2: #2d333b; --sub: #5a6370; --line: #d5dae1;
+    --accent: #1d4f91; --def-bg: #eef3fa; --ex-bg: #f6f7f9; --head-bg: #f4f6f8;
+    --a: #fff1c7; --ab: #ffcf5c; --colhl: #dbe6f5; --zero: #b6bdc7; --bar: 52px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--surround); color: var(--ink); -webkit-font-smoothing: antialiased; word-break: keep-all;
+         font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; }
+  code { font-family: "JetBrains Mono", Consolas, "D2Coding", monospace; font-size: .84em; }
+
+  /* 슬라이드 1장 = 1280 × 720 캔버스, 화면에 맞춰 확대·축소 */
+  .deck { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px 0; }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; background: var(--paper);
+           font-size: 24px; line-height: 1.55; padding: 48px 64px 54px; display: flex; flex-direction: column; }
+  .slide h2 { font-size: 1.6em; font-weight: 700; color: var(--accent); line-height: 1.25; letter-spacing: -.01em;
+              margin: 0 0 .7em; padding-bottom: .3em; border-bottom: 3px solid var(--accent); }
+  .slide p { margin: 0 0 .5em; }
+  .slide ul { list-style: none; margin: 0; padding: 0; }
+  .slide ul > li { position: relative; padding-left: 1.05em; margin: .4em 0; }
+  .slide ul > li::before { content: ""; position: absolute; left: .14em; top: .62em; width: .36em; height: .36em;
+                           border-radius: 50%; background: var(--accent); }
+  .slide li > ul { margin: .15em 0 .1em; }
+  .slide li > ul > li { font-size: .92em; margin: .22em 0; color: var(--ink-2); }
+  .slide li > ul > li::before { background: none; border: 2px solid var(--accent); width: .34em; height: .34em; top: .6em; }
+  .slide ol { margin: 0; padding-left: 1.5em; }
+  .slide ol > li { margin: .4em 0; padding-left: .2em; }
+  .slide b.k { color: var(--accent); }
+  .pg { position: absolute; right: 28px; bottom: 18px; font-size: 15px; color: var(--sub); }
+
+  .def { background: var(--def-bg); border-left: 6px solid var(--accent); border-radius: 0 6px 6px 0;
+         padding: .55em 1em; margin: 0 0 .75em; }
+  .def > .t, .ex > .t { font-weight: 700; margin-right: .55em; }
+  .def > .t { color: var(--accent); }
+  .ex { background: var(--ex-bg); border: 1px solid var(--line); border-radius: 6px; padding: .5em 1em; margin: .5em 0 .4em; }
+  .ex ul { margin-top: .1em; }
+  .ex ul > li { margin: .2em 0; }
+  .q { font-size: 1.3em; font-weight: 600; border-left: 6px solid var(--accent); background: var(--def-bg);
+       border-radius: 0 6px 6px 0; padding: .6em 1em; margin: .2em 0 1em; }
+  .mt { margin-top: .7em; }
+  .cols { display: grid; grid-template-columns: 1fr auto; gap: 1.6em; align-items: start; }
+  .cols.even { grid-template-columns: 1fr 1fr; }
+  .cols > * { min-width: 0; }
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: .45em; align-items: stretch; margin: .5em 0 .3em; }
+  .flow .step { background: var(--def-bg); border: 1px solid #c8d5e8; border-radius: 8px; padding: .55em .7em; font-size: .88em; line-height: 1.45; }
+  .flow .step b { display: block; color: var(--accent); font-size: 1.08em; margin-bottom: .3em; }
+  .flow .arr { align-self: center; color: var(--accent); font-size: 1.3em; }
+  .bad { color: #c0392b; font-weight: 600; }
+  .pipe { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr; gap: .4em; align-items: stretch; margin: .1em 0 .8em; }
+  .pbox { border-radius: 8px; padding: .45em .5em; text-align: center; font-size: .82em; line-height: 1.35; }
+  .pbox b { display: block; font-size: 1.05em; margin-bottom: .15em; }
+  .pbox.data { border: 2px solid var(--line); background: #fff; }
+  .pbox.alg { background: var(--accent); color: #fff; }
+  .parr { align-self: center; color: var(--accent); font-size: 1.3em; }
+  .split { display: grid; grid-template-columns: auto auto auto; justify-content: center; align-items: end; column-gap: 1.2em;
+           margin: .5em 0 .8em; }
+  .split .side { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; justify-content: center; max-width: 16em; }
+  .split .lab { flex-basis: 100%; text-align: center; font-size: .78em; font-weight: 600; color: var(--sub); }
+  .split .chip { border: 2px solid var(--accent); border-radius: 8px; padding: .2em .8em; font-weight: 600; background: var(--def-bg); }
+  .split .arrow { font-size: 1.6em; color: var(--accent); padding-bottom: .05em; }
+  .split .cap { grid-column: 1 / -1; text-align: center; font-size: .8em; color: var(--sub); margin-top: .35em; }
+
+  .katex { font-size: 1.06em; white-space: nowrap; }
+  .katex-display { margin: .45em 0 .35em; }
+  .katex-display > .katex { font-size: 1.18em; }
+  .nw { white-space: nowrap; }
+
+  table { border-collapse: collapse; font-size: .88em; font-variant-numeric: tabular-nums; }
+  th, td { padding: .32em .8em; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; }
+  th { border-bottom: 2px solid var(--ink); font-weight: 600; background: var(--head-bg); }
+  .l { text-align: left; }
+  table.full { width: 100%; }
+  table.sm { font-size: .8em; }
+  table.sm th, table.sm td { padding: .26em .7em; }
+  tr.no td { color: var(--sub); }
+  table.tx { font-size: .8em; }
+  table.tx th, table.tx td { padding: .2em .58em; }
+  table.tx td.z { color: var(--zero); }
+  table.tx th.c { background: var(--colhl); }
+  table.tx tr.a td { background: var(--a); }
+  table.tx tr.ab td { background: var(--ab); }
+  table.tight th, table.tight td { padding: .17em .6em; }
+  table.ct { font-size: .82em; }
+  table.ct th, table.ct td { padding: .3em .7em; }
+  table.ct td.a { background: var(--a); }
+  table.ct td.ab { background: var(--ab); font-weight: 700; }
+  .lg { font-size: .8em; color: var(--sub); margin-top: .5em; }
+  .lg .sw { display: inline-block; width: 1.1em; height: .85em; vertical-align: -.08em; margin-right: .35em; border: 1px solid var(--line); }
+  .lg .sw.a { background: var(--a); }
+  .lg .sw.ab { background: var(--ab); }
+  .lg .item + .item { margin-left: 1.2em; }
+
+  .cover { justify-content: center; padding-left: 120px; }
+  .cover h1 { font-size: 3.2em; font-weight: 800; color: var(--accent); line-height: 1.15; margin: 0; }
+  .cover .en { font-size: 1.35em; color: var(--sub); margin: .25em 0 2.2em; }
+  .cover .course { font-size: 1.1em; }
+  .toc-list { font-size: 1.12em; }
+  .toc-list > li { margin: .55em 0; }
+
+  /* 넘기는 화면 */
+  .bar, .toc, .progress { display: none; }
+  html.js, html.js body { height: 100%; overflow: hidden; }
+  html.js .stage { position: fixed; left: 0; right: 0; top: 0; bottom: var(--bar); }
+  html.js .deck { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; padding: 0; display: block; transform-origin: 0 0; }
+  html.js .slide { position: absolute; left: 0; top: 0; display: none; box-shadow: 0 6px 28px rgba(0,0,0,.4); }
+  html.js .slide.cur { display: flex; }
+  html.js .progress { display: block; position: fixed; left: 0; top: 0; right: 0; height: 3px; z-index: 5; }
+  html.js .progress span { display: block; height: 100%; background: #6fa0e0; width: 0; transition: width .15s; }
+  html.js .bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; height: var(--bar); align-items: center;
+                 justify-content: center; gap: 10px; color: #d6dbe2; font-size: 15px; z-index: 5; background: var(--surround); }
+  .bar button { font: inherit; color: #e8ecf1; background: #2c323b; border: 1px solid #3c4450; border-radius: 6px;
+                padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+  .bar button:hover { background: #38404b; }
+  .bar button:disabled { opacity: .35; cursor: default; }
+  .bar .count { min-width: 76px; text-align: center; font-variant-numeric: tabular-nums; }
+  .bar .sep { width: 1px; height: 22px; background: #3c4450; margin: 0 6px; }
+  html.fs .bar { display: none; }
+  html.fs .stage { bottom: 0; }
+  html.js .toc { position: fixed; top: 0; right: 0; bottom: var(--bar); width: min(420px, 92vw); background: #fff; z-index: 6;
+                 overflow-y: auto; padding: 20px 20px 28px; box-shadow: -6px 0 24px rgba(0,0,0,.35); font-size: 15px; }
+  html.js .toc[hidden] { display: none; }
+  html.js .toc:not([hidden]) { display: block; }
+  .toc h3 { margin: 0 0 10px; font-size: 16px; color: var(--accent); }
+  .toc ol { margin: 0 0 16px; padding-left: 2.2em; }
+  .toc li { margin: 2px 0; }
+  .toc a { color: var(--ink); text-decoration: none; display: block; padding: 3px 6px; border-radius: 4px; }
+  .toc a:hover { background: var(--def-bg); }
+  .toc a.on { background: var(--def-bg); color: var(--accent); font-weight: 600; }
+  .toc .ext a { color: var(--accent); display: inline; padding: 0; }
+
+  /* 세로로 긴 좁은 화면: 슬라이드 비율을 풀고 글을 화면 폭에 맞춤 */
+  @media screen {
+    html.js.reflow, html.js.reflow body { height: auto; overflow: visible; background: var(--paper); }
+    html.js.reflow .stage { position: static; }
+    html.js.reflow .deck { position: static; width: auto; height: auto; transform: none !important; }
+    html.js.reflow .slide { position: relative; width: auto; height: auto; min-height: calc(100vh - var(--bar));
+                            font-size: 16px; padding: 22px 16px calc(var(--bar) + 28px); box-shadow: none; overflow: visible; }
+    html.js.reflow .cover { padding-left: 16px; }
+    html.js.reflow .cols, html.js.reflow .flow, html.js.reflow .pipe { grid-template-columns: 1fr; gap: .6em; }
+    html.js.reflow .parr { display: none; }
+    html.js.reflow .flow .arr { display: none; }
+    html.js.reflow .tw, html.js.reflow .katex-display { overflow-x: auto; overflow-y: hidden; }
+    html.js.reflow .pg { bottom: calc(var(--bar) + 8px); right: 16px; }
+    html.js.reflow .bar { gap: 6px; font-size: 14px; }
+    html.js.reflow .bar button { padding: 6px 10px; }
+    html.js.reflow #fs-btn, html.js.reflow .bar .sep { display: none; }
+    html.js.reflow .bar .count { min-width: 64px; }
+  }
+
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html.js, html.js body { height: auto; overflow: visible; background: #fff; }
+    .bar, .toc, .progress { display: none !important; }
+    html.js .stage { position: static; }
+    html.js .deck { position: static; transform: none !important; width: auto; height: auto; }
+    html.js .slide { display: flex !important; position: relative; box-shadow: none; break-after: page; }
+  }
+</style>
+</head>
+<body>
+<div class="progress"><span></span></div>
+<div class="stage">
+<main class="deck">
+
+<section class="slide cover">
+  <h1>연관규칙</h1>
+  <p class="en">Association Rules</p>
+  <p class="course">비즈니스 애널리틱스 · 9주차</p>
+</section>
+
+<section class="slide">
+  <h2>장바구니 분석과 연관규칙</h2>
+  <ul>
+    <li><b>장바구니 분석</b>(market basket analysis): 거래 기록에서 함께 구매되는 상품을 찾는 분석</li>
+    <li><b>연관규칙</b>(association rule): A를 포함하는 거래에 B도 함께 나오는 경향을 A ⇒ B로 적은 것</li>
+    <li>활용 분야
+      <ul>
+        <li>진열: 함께 구매되는 상품의 배치</li>
+        <li>묶음 판매와 쿠폰: 함께 구매되는 상품의 묶음 할인</li>
+        <li>온라인 추천: "이 상품을 구매한 고객이 함께 구매한 상품" 목록</li>
+        <li>우편·문자 마케팅: 지난 구매 기록에 맞춘 권유 상품 선정</li>
+      </ul>
+    </li>
+    <li>데이터 분석의 필요성: 상품 100개의 두 상품 조합만 4,950가지</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>이번 주의 결정 문제</h2>
+  <div class="q">어떤 품목을 산 고객에게 어떤 품목을 함께 권할 것인가</div>
+  <ul>
+    <li>교재 자료: 한 식료품점의 30일 치 계산대 영수증 9,835장, 품목 169개</li>
+    <li>랩 자료: 책 동아리 Charles Book Club 고객 4,000명의 분야별 구매 기록</li>
+    <li>필요한 도구
+      <ul>
+        <li>함께 구매되는 정도를 숫자로 재는 지표</li>
+        <li>기준을 넘는 조합을 빠짐없이, 빠르게 찾는 방법</li>
+      </ul>
+    </li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>강의 구성</h2>
+  <ol class="toc-list">
+    <li>거래 자료와 기호</li>
+    <li>규칙의 평가 지표: 지지도, 신뢰도, 향상도</li>
+    <li>frequent itemset과 Apriori 알고리즘</li>
+    <li>frequent itemset에서의 규칙 생성</li>
+    <li>결과 해석 시 주의 사항</li>
+  </ol>
+  <ul class="mt">
+    <li>모든 계산 예제: 식료품점 영수증 9,835장, 교재와 같은 자료</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>예제 자료: 식료품점 영수증 9,835장</h2>
+  <div class="cols">
+    <ul>
+      <li>출처: Hahsler·Hornik·Reutterer(2006), R <code>arules</code> 패키지의 Groceries</li>
+      <li>한 식료품점의 30일 치 실제 계산대 기록</li>
+      <li>행: 영수증 1장 = 거래 1건</li>
+      <li>item: 품목 범주 169개
+        <ul><li>whole milk 우유, other vegetables 기타 채소, rolls/buns 롤빵, soda 탄산음료, root vegetables 뿌리채소, yogurt 요구르트 등</li></ul></li>
+      <li>값: 1은 그 영수증에 있음, 수량과 가격은 없음</li>
+      <li>예: 영수증 6은 whole milk와 yogurt를 함께 산 거래</li>
+    </ul>
+    <div class="tw"><table class="tx"><tr><th>영수증</th><th class="c">whole<br>milk</th><th>other<br>vegetables</th><th>rolls/<br>buns</th><th>soda</th><th>root<br>vegetables</th><th class="c">yogurt</th></tr><tr><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr><tr><td>2</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td>1</td></tr><tr><td>3</td><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr><tr><td>4</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td>1</td></tr><tr><td>5</td><td>1</td><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr><tr class="ab"><td>6</td><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td>1</td></tr><tr><td>7</td><td class="z">0</td><td class="z">0</td><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr><tr><td>8</td><td class="z">0</td><td>1</td><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr><tr><td>9</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr><tr><td>10</td><td>1</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td><td class="z">0</td></tr></table>
+      <p class="lg">영수증 9,835장 중 앞 10장, 품목 6개만 표시</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>기본 용어와 기호</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">용어와 기호</th><th class="l">정의</th><th class="l">예제의 예</th></tr>
+    <tr><td class="l">item</td><td class="l">분석 대상인 상품 하나</td><td class="l">whole milk, yogurt 등 169개</td></tr>
+    <tr><td class="l">itemset</td><td class="l">item의 집합</td><td class="l"><span class="nw">{yogurt, whole milk}</span></td></tr>
+    <tr><td class="l">거래(transaction) \(t\)</td><td class="l">영수증 한 장에서 함께 구매한 item의 집합</td><td class="l">영수증 2의 \(t_2=\{\textsf{tropical fruit},\textsf{yogurt},\textsf{coffee}\}\)</td></tr>
+    <tr><td class="l">\(N\)</td><td class="l">전체 거래의 수</td><td class="l">\(N=9{,}835\)</td></tr>
+    <tr><td class="l">포함, \(X\subseteq t\)</td><td class="l">거래 \(t\)가 itemset \(X\)의 item을 모두 가짐</td><td class="l">영수증 6은 <span class="nw">{yogurt, whole milk}</span>를 포함함</td></tr>
+    <tr><td class="l">사건 \(A\)</td><td class="l">무작위로 고른 거래 하나가 itemset \(A\)를 포함하는 사건</td><td class="l">고른 영수증에 yogurt가 있음</td></tr>
+    <tr><td class="l">\(P(A)\)</td><td class="l">사건 \(A\)의 확률, 거래 자료에서는 \(A\)를 포함한 거래의 비율</td><td class="l">\(P(\textsf{yogurt})=1{,}372/9{,}835=0.140\)</td></tr>
+  </table></div>
+</section>
+
+<section class="slide">
+  <h2>연관규칙의 정의</h2>
+  <div class="def"><span class="t">정의</span>공집합이 아니고 공통 item이 없는 두 itemset \(A\), \(B\)에 대하여, \(A\)를 포함하는 거래에 \(B\)도 함께 나오는 경향을 \(A\Rightarrow B\)로 적은 것을 연관규칙이라 함
+</div>
+  <ul>
+    <li>\(A\): antecedent, 규칙의 앞부분으로 고객이 이미 고른 itemset</li>
+    <li>\(B\): consequent, 규칙의 뒷부분으로 함께 권할 itemset</li>
+    <li>예: <span class="nw">{yogurt} ⇒ {whole milk}</span>, <span class="nw">{other vegetables, root vegetables} ⇒ {whole milk}</span></li>
+    <li>방향이 있는 규칙: <span class="nw">{yogurt} ⇒ {whole milk}</span>와 <span class="nw">{whole milk} ⇒ {yogurt}</span>는 서로 다른 규칙</li>
+    <li>규칙은 모든 거래에서 성립하지 않음, 얼마나 성립하는지를 지표로 잼: 지지도, 신뢰도, 향상도</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>지지도의 정의</h2>
+  <div class="cols">
+    <div>
+      <div class="def"><span class="t">정의</span>itemset \(X\)의 지지도(support)는 전체 거래 가운데 \(X\)를 포함하는 거래의 비율, 곧 사건 \(X\)의 확률
+        \[\supp(X)=P(X)\]</div>
+      <ul>
+        <li>규칙의 지지도: \(A\)와 \(B\)를 모두 포함한 거래의 비율
+          \[\supp(A\Rightarrow B)=P(A\cap B)\]</li>
+        <li>거래 자료로 계산: 두 itemset을 모두 포함한 거래 수 ÷ 전체 거래 수</li>
+      </ul>
+      <div class="ex"><span class="t">예</span>\(P(\textsf{yogurt}\cap\textsf{whole milk})=551/9{,}835=\mathbf{0.056}\)
+        <ul><li>\(P(\textsf{whole milk})=2{,}513/9{,}835=0.256\)</li></ul></div>
+    </div>
+    <div class="tw"><table class="ct"><tr><th></th><th>whole milk<br>있음</th><th>whole milk<br>없음</th><th>합계</th></tr><tr><th class="l">yogurt 있음</th><td class="ab">551</td><td>821</td><td>1,372</td></tr><tr><th class="l">yogurt 없음</th><td>1,962</td><td>6,501</td><td>8,463</td></tr><tr><th class="l">합계</th><td>2,513</td><td>7,322</td><td>9,835</td></tr></table>
+      <p class="lg"><span class="sw ab"></span>yogurt와 whole milk를 모두 포함한 영수증</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>신뢰도의 정의</h2>
+  <div class="cols">
+    <div>
+      <div class="def"><span class="t">정의</span>규칙 \(A\Rightarrow B\)의 신뢰도(confidence)는 \(A\)를 포함하는 거래 가운데 \(B\)도 포함하는 거래의 비율
+        \[\conf(A\Rightarrow B)=P(B\mid A)=\frac{P(A\cap B)}{P(A)}\]</div>
+      <div class="ex"><span class="t">예</span><span class="nw">{yogurt} ⇒ {whole milk}</span>
+        <ul>
+          <li>yogurt가 있는 영수증: 1,372장</li>
+          <li>그중 whole milk도 있는 영수증: 551장</li>
+          <li>\(P(\textsf{whole milk}\mid\textsf{yogurt})=551/1{,}372=\mathbf{0.402}\)</li>
+        </ul></div>
+      <ul><li>의미: yogurt를 산 영수증의 40%에 whole milk도 있음</li></ul>
+    </div>
+    <div class="tw"><table class="ct"><tr><th></th><th>whole milk<br>있음</th><th>whole milk<br>없음</th><th>합계</th></tr><tr><th class="l">yogurt 있음</th><td class="ab">551</td><td class="a">821</td><td class="a">1,372</td></tr><tr><th class="l">yogurt 없음</th><td>1,962</td><td>6,501</td><td>8,463</td></tr><tr><th class="l">합계</th><td>2,513</td><td>7,322</td><td>9,835</td></tr></table>
+      <p class="lg"><span class="item"><span class="sw a"></span>사건 \(A\)</span><span class="item"><span class="sw ab"></span>사건 \(A\cap B\)</span></p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>신뢰도의 한계</h2>
+  <div class="cols">
+    <div>
+      <ul>
+        <li>규칙 <span class="nw">{soda} ⇒ {whole milk}</span>의 신뢰도: \(394/1{,}715=0.23\)
+          <ul><li>soda를 산 영수증 1,715장 중 394장에 whole milk</li></ul></li>
+        <li>whole milk의 지지도: \(2{,}513/9{,}835=0.256\)
+          <ul><li>soda 구매 여부와 관계없이 영수증 네 장 중 한 장꼴로 whole milk</li></ul></li>
+        <li>비교: soda 영수증의 whole milk 비율 0.23 &lt; 전체 영수증의 whole milk 비율 0.256</li>
+        <li>신뢰도 0.23만 보면 soda를 산 고객이 whole milk도 꽤 사는 것처럼 보임</li>
+        <li>consequent \(B\)가 흔한 item이면 \(A\)와 관계없이 신뢰도가 \(P(B)\) 근처로 나옴</li>
+        <li>필요한 지표: 신뢰도를 consequent \(B\)의 지지도와 비교하는 지표</li>
+      </ul>
+    </div>
+    <div class="tw"><table class="ct"><tr><th></th><th>whole milk<br>있음</th><th>whole milk<br>없음</th><th>합계</th></tr><tr><th class="l">soda 있음</th><td class="ab">394</td><td class="a">1,321</td><td class="a">1,715</td></tr><tr><th class="l">soda 없음</th><td>2,119</td><td>6,001</td><td>8,120</td></tr><tr><th class="l">합계</th><td>2,513</td><td>7,322</td><td>9,835</td></tr></table>
+      <p class="lg"><span class="item"><span class="sw a"></span>soda 포함</span><span class="item"><span class="sw ab"></span>soda와 whole milk 포함</span></p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>향상도의 정의</h2>
+  <div class="def"><span class="t">정의</span>규칙 \(A\Rightarrow B\)의 향상도(lift)는 신뢰도를 consequent \(B\)의 지지도로 나눈 값
+    \[\lift(A\Rightarrow B)=\frac{P(B\mid A)}{P(B)}=\frac{P(A\cap B)}{P(A)\,P(B)}\]</div>
+  <ul>
+    <li>의미: \(A\)를 포함한 거래의 \(B\) 포함 비율이 전체 거래의 \(B\) 포함 비율의 몇 배인지</li>
+    <li>\(\lift=1\): \(P(A\cap B)=P(A)\,P(B)\), 곧 사건 \(A\)와 \(B\)가 독립</li>
+    <li>\(\lift&gt;1\): \(A\)를 포함한 거래에서 \(B\)가 더 자주 나옴</li>
+    <li>\(\lift&lt;1\): \(A\)를 포함한 거래에서 \(B\)가 덜 나옴</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>향상도의 계산 예</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">규칙</th><th>신뢰도 \(P(B\mid A)\)</th><th>\(P(B)\)</th><th>향상도</th></tr>
+    <tr><td class="l"><span class="nw">{root vegetables} ⇒ {other vegetables}</span></td><td>\(466/1{,}072=0.435\)</td><td>0.193</td><td>\(0.435/0.193=\mathbf{2.25}\)</td></tr>
+    <tr><td class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span></td><td>\(551/1{,}372=0.402\)</td><td>0.256</td><td>\(0.402/0.256=\mathbf{1.57}\)</td></tr>
+    <tr><td class="l"><span class="nw">{soda} ⇒ {whole milk}</span></td><td>\(394/1{,}715=0.230\)</td><td>0.256</td><td>\(0.230/0.256=\mathbf{0.90}\)</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li><span class="nw">{root vegetables} ⇒ {other vegetables}</span>: other vegetables가 전체 영수증보다 2.25배 자주 나옴</li>
+    <li><span class="nw">{soda} ⇒ {whole milk}</span>: 신뢰도는 0.23이지만 whole milk가 전체 영수증보다 덜 나옴</li>
+    <li>신뢰도의 높고 낮음만으로는 규칙의 유용성을 판단할 수 없음</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>규칙 방향에 따른 지표 변화</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">규칙</th><th>지지도</th><th>신뢰도</th><th>향상도</th></tr>
+    <tr><td class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span></td><td>0.056</td><td>\(551/1{,}372=0.402\)</td><td>\(\dfrac{551\times9{,}835}{1{,}372\times2{,}513}=1.57\)</td></tr>
+    <tr><td class="l"><span class="nw">{whole milk} ⇒ {yogurt}</span></td><td>0.056</td><td>\(551/2{,}513=0.219\)</td><td>\(\dfrac{551\times9{,}835}{2{,}513\times1{,}372}=1.57\)</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>지지도와 향상도: 식에서 \(A\)와 \(B\)의 자리를 바꿔도 같은 값</li>
+    <li>신뢰도: \(P(B\mid A)\)와 \(P(A\mid B)\)는 분모가 \(P(A)\)와 \(P(B)\)로 달라 방향에 따라 다른 값</li>
+    <li>추천에 쓰는 규칙: 고객이 이미 고른 itemset을 antecedent로 둔 규칙
+      <ul><li>yogurt를 담은 고객에게 whole milk를 권하는 근거: <span class="nw">{yogurt} ⇒ {whole milk}</span>의 신뢰도 0.402</li></ul></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>item 수에 따른 규칙 수</h2>
+  <div class="tw"><table class="full">
+    <tr><th>item 수 \(k\)</th><th>itemset 수 \(2^k-1\)</th><th>규칙 수 \(3^k-2^{k+1}+1\)</th></tr>
+    <tr><td>5</td><td>31</td><td>180</td></tr>
+    <tr><td>20</td><td>1,048,575</td><td>3,484,687,250</td></tr>
+    <tr><td>169, 식료품점 전체</td><td>약 \(7.5\times10^{50}\)</td><td>약 \(4.3\times10^{80}\)</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>규칙 수의 유도
+      <ul>
+        <li>각 item을 \(A\)에 넣기, \(B\)에 넣기, 어디에도 넣지 않기 중 하나로 배정: \(3^k\)가지</li>
+        <li>\(A=\varnothing\)인 배정 \(2^k\)가지와 \(B=\varnothing\)인 배정 \(2^k\)가지를 뺌</li>
+        <li>\(A=B=\varnothing\)인 배정 1가지는 두 번 빠졌으므로 다시 더함</li>
+      </ul></li>
+    <li>모든 규칙의 계산은 불가능하므로 탐색 범위를 줄이는 기준이 필요함</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>연관규칙 탐색의 큰 그림</h2>
+  <div class="pipe">
+    <div class="pbox data"><b>거래 자료</b>영수증 9,835장</div>
+    <div class="parr">→</div>
+    <div class="pbox alg"><b>① Apriori</b>지지도로 거름</div>
+    <div class="parr">→</div>
+    <div class="pbox data"><b>frequent itemset</b>자주 함께 팔린 조합</div>
+    <div class="parr">→</div>
+    <div class="pbox alg"><b>② 규칙 생성</b>신뢰도로 거름</div>
+    <div class="parr">→</div>
+    <div class="pbox data"><b>규칙</b>함께 권할 상품</div>
+  </div>
+  <div class="tw"><table class="full tight">
+    <tr><th class="l"></th><th class="l">① Apriori</th><th class="l">② 규칙 생성</th></tr>
+    <tr><td class="l"><b>답하는 질문</b></td><td class="l">무엇이 자주 함께 팔렸나</td><td class="l">누구에게 무엇을 권할까</td></tr>
+    <tr><td class="l"><b>하는 일</b></td><td class="l">지지도가 기준 이상인 item 조합을 찾음</td><td class="l">조합을 이미 고른 쪽과 권할 쪽으로 나누고 신뢰도로 거름</td></tr>
+    <tr><td class="l"><b>결과</b></td><td class="l">frequent itemset, 방향 없음</td><td class="l">규칙 \(A\Rightarrow B\), 방향 있음</td></tr>
+    <tr><td class="l"><b>기준</b></td><td class="l">분석가가 정한 최소 지지도</td><td class="l">분석가가 정한 최소 신뢰도</td></tr>
+    <tr><td class="l"><b>예</b></td><td class="l"><span class="nw">{whole milk, other vegetables, root vegetables}</span>: 영수증 228장에서 함께 팔림</td><td class="l"><span class="nw">{other vegetables, root vegetables} ⇒ {whole milk}</span>: 두 채소를 담은 고객에게 우유를 권함</td></tr>
+    <tr><td class="l"><b>코드</b></td><td class="l"><code>apriori</code></td><td class="l"><code>association_rules</code></td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>규칙을 고른 다음: 향상도로 원래 잘 팔리는 상품이라서 신뢰도가 높게 나온 것은 아닌지 확인</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>frequent itemset의 정의</h2>
+  <div class="def"><span class="t">정의</span>분석가가 정한 최소 지지도 \(s_{\min}\)에 대하여 \(P(X)\ge s_{\min}\)인 itemset \(X\)를 frequent itemset이라 함</div>
+  <ul>
+    <li>뜻: 기준 이상으로 자주 함께 팔린 item 조합</li>
+    <li>예: \(s_{\min}=0.02\)이면 영수증 9,835장 중 197장 이상에서 함께 나온 itemset</li>
+    <li>이후 예제: 가장 많이 팔린 품목 5개, \(s_{\min}=0.02\), \(c_{\min}=0.4\)
+      <ul><li>whole milk, other vegetables, rolls/buns, soda, root vegetables</li></ul></li>
+    <li>코드
+      <ul>
+        <li>① <code>itemsets = apriori(df, min_support=0.02, use_colnames=True)</code></li>
+        <li>② <code>rules = association_rules(itemsets, len(df), metric="confidence", min_threshold=0.4)</code></li>
+      </ul></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Apriori 원리</h2>
+  <div class="def"><span class="t">성질</span>itemset에 item을 더하면 지지도는 같거나 줄어듦
+    <br>\(X\subseteq Y\)이면 \(P(Y)\le P(X)\)</div>
+  <ul>
+    <li>근거: \(Y\)를 포함하는 거래는 \(Y\)의 부분집합 \(X\)도 포함하므로 사건 \(Y\)가 일어나면 사건 \(X\)도 일어남, \(P(Y)\le P(X)\)
+      <ul><li>예: <span class="nw">{soda}</span> 0.174, <span class="nw">{soda, root vegetables}</span> 0.019, <span class="nw">{whole milk, soda, root vegetables}</span> 0.008</li></ul></li>
+    <li>결론: frequent가 아닌 itemset에 item을 더한 itemset도 frequent가 아님</li>
+    <li>활용: frequent가 아닌 itemset을 포함하는 itemset은 지지도를 세지 않음</li>
+  </ul>
+  <div class="ex"><span class="t">예</span>\(s_{\min}=0.02\)에서 <span class="nw">{soda, root vegetables}</span>의 지지도 0.019
+    <ul><li><span class="nw">{whole milk, soda, root vegetables}</span>, <span class="nw">{other vegetables, soda, root vegetables}</span> 등은 세지 않음</li></ul></div>
+</section>
+
+<section class="slide">
+  <h2>Apriori 알고리즘의 절차</h2>
+  <ul>
+    <li>아이디어: 크기 1 itemset부터 크기를 하나씩 늘리며, 앞 단계에서 남은 frequent itemset으로만 다음 크기의 candidate를 만듦</li>
+  </ul>
+  <div class="flow">
+    <div class="step"><b>1. candidate 생성</b>크기 \(k-1\) frequent itemset 두 개를 합쳐 item이 \(k\)개인 itemset을 만듦</div>
+    <div class="arr">→</div>
+    <div class="step"><b>2. prune</b>크기 \(k-1\) 부분집합 중 frequent가 아닌 것이 하나라도 있으면 버림</div>
+    <div class="arr">→</div>
+    <div class="step"><b>3. 지지도 계산</b>남은 candidate의 지지도를 거래 자료에서 셈</div>
+    <div class="arr">→</div>
+    <div class="step"><b>4. 선택</b>지지도가 \(s_{\min}\) 이상인 candidate를 크기 \(k\) frequent itemset으로 남김</div>
+  </div>
+  <ul class="mt">
+    <li>시작: item 하나짜리 itemset의 지지도를 세어 크기 1 frequent itemset을 고름</li>
+    <li>반복: \(k=2,3,\dots\)에 대하여 위 과정을 반복</li>
+    <li>종료: 새로 남은 frequent itemset이 없을 때</li>
+    <li>빠뜨림이 없는 이유: frequent itemset의 부분집합은 Apriori 원리에 의해 모두 frequent이므로 prune에서 버려지지 않음</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Apriori 진행 예: 크기 1</h2>
+  <p>조건: 최소 지지도 \(s_{\min}=0.02\), 영수증 197장 이상</p>
+  <div class="cols">
+    <ul>
+      <li>item 하나짜리 itemset 5개의 지지도를 셈</li>
+      <li>크기 1 frequent itemset: 5개 모두</li>
+      <li>가장 적은 root vegetables도 지지도 0.109로 기준의 다섯 배 이상</li>
+    </ul>
+    <div class="tw"><table class="sm">
+      <tr><th class="l">크기 1 itemset</th><th>\(n\)</th><th>지지도</th><th>frequent</th></tr>
+      <tr><td class="l"><span class="nw">{whole milk}</span></td><td>2,513</td><td>0.256</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{other vegetables}</span></td><td>1,903</td><td>0.193</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{rolls/buns}</span></td><td>1,809</td><td>0.184</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{soda}</span></td><td>1,715</td><td>0.174</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{root vegetables}</span></td><td>1,072</td><td>0.109</td><td>○</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Apriori 진행 예: 크기 2</h2>
+  <div class="cols">
+    <ul>
+      <li>candidate 생성: 크기 1 frequent itemset 5개에서 두 개씩 합친 10개</li>
+      <li>prune: 부분집합이 모두 크기 1 frequent itemset이므로 버릴 것 없음</li>
+      <li>지지도 계산: candidate 10개</li>
+      <li>크기 2 frequent itemset: 9개
+        <ul><li><span class="nw">{soda, root vegetables}</span>만 0.019로 탈락</li></ul></li>
+    </ul>
+    <div class="tw"><table class="sm">
+      <tr><th class="l">크기 2 candidate</th><th>\(n\)</th><th>지지도</th><th>frequent</th></tr>
+      <tr><td class="l"><span class="nw">{whole milk, other vegetables}</span></td><td>736</td><td>0.075</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{whole milk, rolls/buns}</span></td><td>557</td><td>0.057</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{whole milk, soda}</span></td><td>394</td><td>0.040</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{whole milk, root vegetables}</span></td><td>481</td><td>0.049</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{other vegetables, rolls/buns}</span></td><td>419</td><td>0.043</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{other vegetables, soda}</span></td><td>322</td><td>0.033</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{other vegetables, root vegetables}</span></td><td>466</td><td>0.047</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{rolls/buns, soda}</span></td><td>377</td><td>0.038</td><td>○</td></tr>
+      <tr><td class="l"><span class="nw">{rolls/buns, root vegetables}</span></td><td>239</td><td>0.024</td><td>○</td></tr>
+      <tr class="no"><td class="l"><span class="bad"><span class="nw">{soda, root vegetables}</span></span></td><td>183</td><td>0.019</td><td>×</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Apriori 진행 예: 크기 3</h2>
+  <p>크기 2 frequent itemset 두 개를 합친 candidate 10개: prune 3개, 지지도를 센 7개, frequent itemset 1개</p>
+  <div class="tw"><table class="full tight">
+    <tr><th class="l">candidate</th><th class="l">frequent가 아닌 크기 2 부분집합</th><th>\(n\)</th><th>지지도</th><th>frequent</th></tr>
+    <tr><td class="l"><span class="nw">{whole milk, other vegetables, root vegetables}</span></td><td class="l">없음</td><td>228</td><td>0.023</td><td>○</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk, other vegetables, rolls/buns}</span></td><td class="l">없음</td><td>176</td><td>0.018</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk, other vegetables, soda}</span></td><td class="l">없음</td><td>137</td><td>0.014</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk, rolls/buns, root vegetables}</span></td><td class="l">없음</td><td>125</td><td>0.013</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{other vegetables, rolls/buns, root vegetables}</span></td><td class="l">없음</td><td>120</td><td>0.012</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{other vegetables, rolls/buns, soda}</span></td><td class="l">없음</td><td>97</td><td>0.010</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk, rolls/buns, soda}</span></td><td class="l">없음</td><td>87</td><td>0.009</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk, soda, root vegetables}</span></td><td class="l"><span class="bad"><span class="nw">{soda, root vegetables}</span></span></td><td colspan="2">prune, 세지 않음</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{other vegetables, soda, root vegetables}</span></td><td class="l"><span class="bad"><span class="nw">{soda, root vegetables}</span></span></td><td colspan="2">prune, 세지 않음</td><td>×</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{rolls/buns, soda, root vegetables}</span></td><td class="l"><span class="bad"><span class="nw">{soda, root vegetables}</span></span></td><td colspan="2">prune, 세지 않음</td><td>×</td></tr>
+  </table></div>
+</section>
+
+<section class="slide">
+  <h2>Apriori 탐색 결과 요약</h2>
+  <div class="tw"><table class="full">
+    <tr><th>크기</th><th>만들 수 있는 itemset</th><th>지지도를 센 candidate</th><th>frequent itemset</th></tr>
+    <tr><td>1</td><td>5</td><td>5</td><td>5</td></tr>
+    <tr><td>2</td><td>10</td><td>10</td><td>9</td></tr>
+    <tr><td>3</td><td>10</td><td>7</td><td>1</td></tr>
+    <tr><td>4</td><td>5</td><td>0</td><td>0</td></tr>
+    <tr><td>5</td><td>1</td><td>0</td><td>0</td></tr>
+    <tr><td><b>합계</b></td><td><b>31</b></td><td><b>22</b></td><td><b>15</b></td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>크기 4: 크기 3 frequent itemset이 하나뿐이라 두 개를 합친 candidate가 없어 종료</li>
+    <li>지지도를 센 itemset: 가능한 31개 중 22개</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>frequent itemset에서의 규칙 생성</h2>
+  <div class="cols even">
+    <ul>
+      <li>frequent itemset: 방향이 없는 사실
+        <ul>
+          <li><span class="nw">{whole milk, other vegetables, root vegetables}</span>: 세 품목이 영수증 228장에서 함께 팔림</li>
+          <li>무엇을 먼저 골랐고 무엇을 권할지는 알려 주지 않음</li>
+        </ul></li>
+      <li>규칙: frequent itemset을 두 쪽으로 나눠 방향을 붙인 것
+        <ul>
+          <li>antecedent \(A\): 고객이 이미 고른 쪽</li>
+          <li>consequent \(B\): 함께 권할 쪽</li>
+        </ul></li>
+    </ul>
+    <div class="split">
+      <div class="side"><span class="lab">antecedent \(A\)</span><span class="chip">other vegetables</span><span class="chip">root vegetables</span></div>
+      <div class="arrow">⇒</div>
+      <div class="side"><span class="lab">consequent \(B\)</span><span class="chip">whole milk</span></div>
+      <div class="cap">두 채소를 담은 고객에게 우유를 권하는 추천</div>
+    </div>
+  </div>
+  <div class="def mt"><span class="t">신뢰도</span>\(A\)를 산 거래 가운데 \(B\)까지 산 거래의 비율
+    \[\conf(A\Rightarrow B)=P(B\mid A)=\frac{P(A\cap B)}{P(A)}\]</div>
+</section>
+
+<section class="slide">
+  <h2>규칙 생성의 예: 세 품목 itemset</h2>
+  <p><span class="nw">{whole milk, other vegetables, root vegetables}</span>를 두 쪽으로 나누는 방법 6가지 = 추천 상황 6개</p>
+  <div class="tw"><table class="full sm">
+    <tr><th class="l">규칙</th><th>\(A\)를 산 영수증</th><th>그중 \(B\)도 산 영수증</th><th>신뢰도</th><th>\(c_{\min}=0.4\)</th></tr>
+    <tr><td class="l"><span class="nw">{other vegetables, root vegetables} ⇒ {whole milk}</span></td><td>466장</td><td>228장</td><td>\(228/466=0.49\)</td><td>채택</td></tr>
+    <tr><td class="l"><span class="nw">{whole milk, root vegetables} ⇒ {other vegetables}</span></td><td>481장</td><td>228장</td><td>\(228/481=0.47\)</td><td>채택</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk, other vegetables} ⇒ {root vegetables}</span></td><td>736장</td><td>228장</td><td>\(228/736=0.31\)</td><td>제외</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{root vegetables} ⇒ {whole milk, other vegetables}</span></td><td>1,072장</td><td>228장</td><td>\(228/1{,}072=0.21\)</td><td>제외</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{other vegetables} ⇒ {whole milk, root vegetables}</span></td><td>1,903장</td><td>228장</td><td>\(228/1{,}903=0.12\)</td><td>제외</td></tr>
+    <tr class="no"><td class="l"><span class="nw">{whole milk} ⇒ {other vegetables, root vegetables}</span></td><td>2,513장</td><td>228장</td><td>\(228/2{,}513=0.09\)</td><td>제외</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>분자: 세 품목을 모두 산 영수증 228장으로 모든 규칙에 같음, 분모만 \(A\)를 산 영수증 수로 달라짐</li>
+    <li><span class="nw">{other vegetables, root vegetables} ⇒ {whole milk}</span>: 두 채소를 산 영수증 466장 중 228장이 우유도 구매</li>
+    <li><span class="nw">{whole milk} ⇒ {other vegetables, root vegetables}</span>: 우유를 산 영수증 2,513장 중 228장뿐, 근거가 약해 제외</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>frequent itemset에서만 규칙을 만드는 이유</h2>
+  <ul>
+    <li>규칙의 지지도: 양쪽을 모두 산 거래의 비율, 곧 나누기 전 itemset의 지지도
+      \[\supp(A\Rightarrow B)=P(A\cap B)=P(Z)\]
+      <ul><li>\(Z\): \(A\)와 \(B\)의 item을 모두 담은 itemset, 사건 \(A\cap B\)는 고른 거래가 \(Z\)를 포함하는 사건</li></ul></li>
+    <li>드물게 함께 팔린 조합에서 나온 규칙: 근거가 되는 거래가 처음부터 적음</li>
+    <li>frequent itemset에서만 규칙을 만들면 충분히 자주 함께 팔린 조합에서 나온 규칙만 남음</li>
+    <li>계산: 분모 \(P(A)\)는 Apriori 단계에서 이미 셈
+      <ul>
+        <li>\(A\)는 frequent itemset의 일부이므로 \(A\)도 frequent itemset</li>
+        <li>거래 자료를 다시 읽지 않고 나눗셈만으로 신뢰도 계산</li>
+      </ul></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>예제 전체의 규칙 수</h2>
+  <div class="tw"><table class="full">
+    <tr><th>frequent itemset의 item 수</th><th>frequent itemset 수</th><th>하나에서 나오는 규칙</th><th>규칙 수</th><th>신뢰도 0.4 이상</th></tr>
+    <tr><td>1</td><td>5</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>2</td><td>9</td><td>2</td><td>18</td><td>2</td></tr>
+    <tr><td>3</td><td>1</td><td>6</td><td>6</td><td>2</td></tr>
+    <tr><td><b>합계</b></td><td><b>15</b></td><td></td><td><b>24</b></td><td><b>4</b></td></tr>
+  </table></div>
+  <ul class="mt">
+    <li>item 1개인 frequent itemset: 두 쪽으로 나눌 수 없어 규칙이 없음</li>
+    <li>item이 \(m\)개인 frequent itemset 하나에서 나오는 규칙: \(2^m-2\)개</li>
+    <li>신뢰도 0.4 이상인 크기 2 규칙: <span class="nw">{root vegetables} ⇒ {whole milk}</span> 0.45, <span class="nw">{root vegetables} ⇒ {other vegetables}</span> 0.43</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>mlxtend 결과 표의 열과 기호</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">열 이름</th><th class="l">기호와 식</th><th class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span>의 값</th></tr>
+    <tr><td class="l"><code>antecedents</code></td><td class="l">\(A\)</td><td class="l"><span class="nw">{yogurt}</span></td></tr>
+    <tr><td class="l"><code>consequents</code></td><td class="l">\(B\)</td><td class="l"><span class="nw">{whole milk}</span></td></tr>
+    <tr><td class="l"><code>antecedent support</code></td><td class="l">\(P(A)\)</td><td class="l">0.140</td></tr>
+    <tr><td class="l"><code>consequent support</code></td><td class="l">\(P(B)\)</td><td class="l">0.256</td></tr>
+    <tr><td class="l"><code>support</code></td><td class="l">\(P(A\cap B)\)</td><td class="l">0.056</td></tr>
+    <tr><td class="l"><code>confidence</code></td><td class="l">\(P(B\mid A)\)</td><td class="l">0.402</td></tr>
+    <tr><td class="l"><code>lift</code></td><td class="l">\(P(B\mid A)/P(B)\)</td><td class="l">1.572</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li><code>association_rules</code>의 둘째 인자: 전체 거래 수 \(N\), 예제에서 <code>len(df)</code> = 9,835</li>
+    <li>나머지 열 <code>leverage</code>, <code>conviction</code> 등은 이 과목에서 사용하지 않음</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>해석 시 주의: 지지도가 낮은 규칙</h2>
+  <div class="def"><span class="t">향상도의 상한</span>신뢰도는 1을 넘지 않음
+    \[\lift(A\Rightarrow B)=\frac{P(B\mid A)}{P(B)}\le\frac{1}{P(B)}\]</div>
+  <div class="cols">
+    <ul>
+      <li>드물게 구매되는 item이 consequent인 규칙: 향상도가 매우 크게 나올 수 있음</li>
+      <li>예: <span class="nw">{liquor, red/blush wine} ⇒ {bottled beer}</span>의 신뢰도 0.90, 향상도 11.2
+        <ul><li>근거 영수증: antecedent 21장 중 19장</li></ul></li>
+      <li>소수 거래의 우연으로 생긴 규칙일 수 있으므로 향상도와 지지도를 함께 판단</li>
+    </ul>
+    <div class="tw"><table>
+      <tr><th class="l">consequent \(B\)</th><th>지지도</th><th>향상도의 상한</th></tr>
+      <tr><td class="l">whole milk</td><td>0.256</td><td>3.9</td></tr>
+      <tr><td class="l">bottled beer</td><td>0.081</td><td>12.4</td></tr>
+      <tr><td class="l">지지도 0.01인 item</td><td>0.01</td><td>100</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>해석 시 주의: 영수증 크기의 영향</h2>
+  <ul>
+    <li>품목이 많은 영수증에는 어떤 두 품목이든 함께 들어 있기 쉬움</li>
+    <li>큰 영수증과 작은 영수증이 섞인 전체 자료에서는 향상도가 1보다 크게 나오기 쉬움</li>
+    <li>확인 방법: 영수증을 품목 수로 나눈 뒤, 같은 크기의 영수증끼리 향상도를 다시 계산</li>
+  </ul>
+  <div class="tw mt"><table class="full">
+    <tr><th class="l">영수증의 품목 수</th><th>전체</th><th>1~2개</th><th>3~4개</th><th>5~8개</th><th>9개 이상</th></tr>
+    <tr><td class="l">영수증 수</td><td>9,835</td><td>3,802</td><td>2,304</td><td>2,483</td><td>1,246</td></tr>
+    <tr><td class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span>의 향상도</td><td><b>1.57</b></td><td>0.66</td><td>0.77</td><td>1.12</td><td>1.03</td></tr>
+    <tr><td class="l"><span class="nw">{root vegetables} ⇒ {other vegetables}</span>의 향상도</td><td><b>2.25</b></td><td>1.98</td><td>1.61</td><td>1.32</td><td>1.18</td></tr>
+  </table></div>
+  <ul class="mt">
+    <li><span class="nw">{yogurt} ⇒ {whole milk}</span>: 같은 크기의 영수증끼리는 0.66~1.12, 전체의 1.57은 대부분 영수증 크기에서 나옴</li>
+    <li><span class="nw">{root vegetables} ⇒ {other vegetables}</span>: 모든 크기에서 1보다 큼, 영수증 크기를 맞춰도 남는 관계</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>해석 시 주의: 동시 구매와 추천 효과의 구분</h2>
+  <ul>
+    <li><b>연관규칙</b>: 과거 거래에서 \(A\)와 \(B\)가 함께 나온 정도의 요약</li>
+    <li><b>추천 효과</b>: \(A\)를 구매한 고객에게 \(B\)를 권했을 때 늘어나는 \(B\)의 구매</li>
+    <li>연관규칙으로 추천 효과를 알 수 없는 이유
+      <ul>
+        <li>규칙에 잡힌 고객은 권하지 않아도 \(B\)를 구매했을 수 있음</li>
+        <li>고객이 스스로 찾아 함께 담는 상품이면 권유의 효과는 더 작음</li>
+      </ul></li>
+    <li>추천 효과의 측정: 무작위 실험
+      <ol>
+        <li>\(A\)를 구매한 고객을 무작위로 두 집단으로 나눔</li>
+        <li>한 집단에만 \(B\)를 권함</li>
+        <li>두 집단의 \(B\) 구매율을 2표본 비율검정으로 비교함, 1주차 A/B 검정과 같은 방법</li>
+      </ol></li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>정리</h2>
+  <div class="tw"><table class="full">
+    <tr><th class="l">개념</th><th class="l">정의</th><th class="l">예제의 값</th></tr>
+    <tr><td class="l">지지도</td><td class="l">\(\supp(A\Rightarrow B)=P(A\cap B)\)</td><td class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span>: 0.056</td></tr>
+    <tr><td class="l">신뢰도</td><td class="l">\(\conf(A\Rightarrow B)=P(B\mid A)\)</td><td class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span>: 0.402</td></tr>
+    <tr><td class="l">향상도</td><td class="l">\(\lift(A\Rightarrow B)=P(B\mid A)/P(B)\)</td><td class="l"><span class="nw">{yogurt} ⇒ {whole milk}</span>: 1.57</td></tr>
+    <tr><td class="l">frequent itemset</td><td class="l">\(P(X)\ge s_{\min}\)인 itemset</td><td class="l">5품목, \(s_{\min}=0.02\)에서 15개</td></tr>
+    <tr><td class="l">Apriori 원리</td><td class="l">\(X\subseteq Y\)이면 \(P(Y)\le P(X)\)</td><td class="l"><span class="nw">{soda, root vegetables}</span>를 포함하는 itemset은 세지 않음</td></tr>
+    <tr><td class="l">규칙 생성</td><td class="l">frequent itemset을 antecedent와 consequent로 나눠 방향을 붙이고 신뢰도로 거름</td><td class="l">규칙 24개 중 신뢰도 0.4 이상 4개</td></tr>
+    <tr><td class="l">해석</td><td class="l" colspan="2">낮은 지지도의 규칙은 지지도와 함께 판단, 영수증 크기별 향상도 확인, 추천 효과는 무작위 실험으로 측정</td></tr>
+  </table></div>
+</section>
+
+</main>
+</div>
+
+<nav class="bar" aria-label="슬라이드 이동">
+  <button type="button" id="prev" aria-label="이전">‹ 이전</button>
+  <span class="count" id="count">1 / 1</span>
+  <button type="button" id="next" aria-label="다음">다음 ›</button>
+  <span class="sep"></span>
+  <button type="button" id="toc-btn">목차</button>
+  <button type="button" id="fs-btn">전체 화면</button>
+</nav>
+<aside class="toc" id="toc" hidden>
+  <h3>목차</h3>
+  <ol id="toc-list"></ol>
+  <p class="ext">교재: <a href="https://colab.research.google.com/github/BALAB-PKNU/bizanalytics/blob/main/notebooks/week09_association_rules.ipynb">9주차 교재 (Colab)</a></p>
+  <p class="ext">이동: ← → 키, 스페이스, 화면 밀기 · 목차: T 키 · 전체 화면: F 키</p>
+</aside>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var root = document.documentElement;
+  var deck = document.querySelector(".deck");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var N = slides.length, cur = 0;
+
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }],
+      macros: { "\\supp": "\\mathrm{supp}", "\\conf": "\\mathrm{conf}", "\\lift": "\\mathrm{lift}" },
+      throwOnError: false
+    });
+    // 수식 바로 뒤의 조사·문장부호가 다음 줄로 떨어지지 않게 묶음
+    document.querySelectorAll(".katex").forEach(function (k) {
+      if (k.closest(".katex-display")) return;
+      var w = (k.parentElement.tagName === "SPAN" && !k.parentElement.className) ? k.parentElement : k;
+      var t = w.nextSibling;
+      if (!t || t.nodeType !== 3) return;
+      var m = t.data.match(/^[^\s]+/);
+      if (!m) return;
+      var glue = document.createElement("span");
+      glue.className = "nw";
+      w.parentNode.insertBefore(glue, w);
+      glue.appendChild(w);
+      glue.appendChild(document.createTextNode(m[0]));
+      t.data = t.data.slice(m[0].length);
+    });
+  }
+
+  var tocList = document.getElementById("toc-list");
+  slides.forEach(function (s, i) {
+    if (i > 0) {
+      var pg = document.createElement("span");
+      pg.className = "pg";
+      pg.textContent = (i + 1) + " / " + N;
+      s.appendChild(pg);
+    }
+    var h = s.querySelector("h2, h1");
+    var li = document.createElement("li");
+    var a = document.createElement("a");
+    a.href = "#" + (i + 1);
+    a.textContent = h ? h.textContent : "슬라이드 " + (i + 1);
+    a.addEventListener("click", function (e) { e.preventDefault(); go(i); toggleToc(false); });
+    li.appendChild(a);
+    tocList.appendChild(li);
+  });
+  var tocLinks = tocList.querySelectorAll("a");
+
+  function fit() {
+    var reflow = window.innerWidth < 700 && window.innerHeight > window.innerWidth;
+    root.classList.toggle("reflow", reflow);
+    if (reflow) { deck.style.transform = ""; return; }
+    var bar = root.classList.contains("fs") ? 0 : 52;
+    var W = window.innerWidth, H = window.innerHeight - bar;
+    var s = Math.min(W / 1280, H / 720);
+    deck.style.transform = "translate(" + (W - 1280 * s) / 2 + "px," + (H - 720 * s) / 2 + "px) scale(" + s + ")";
+  }
+  function go(i) {
+    cur = Math.max(0, Math.min(N - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle("cur", j === cur); });
+    tocLinks.forEach(function (a, j) { a.classList.toggle("on", j === cur); });
+    document.getElementById("count").textContent = (cur + 1) + " / " + N;
+    document.getElementById("prev").disabled = cur === 0;
+    document.getElementById("next").disabled = cur === N - 1;
+    document.querySelector(".progress span").style.width = ((cur + 1) / N * 100) + "%";
+    if (location.hash !== "#" + (cur + 1)) history.replaceState(null, "", "#" + (cur + 1));
+    if (root.classList.contains("reflow")) window.scrollTo(0, 0);
+  }
+  var toc = document.getElementById("toc");
+  function toggleToc(on) {
+    if (on === undefined) on = toc.hidden;
+    toc.hidden = !on;
+  }
+  function toggleFs() {
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (root.requestFullscreen) { root.requestFullscreen().catch(function () {}); }
+  }
+
+  document.getElementById("prev").addEventListener("click", function () { go(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { go(cur + 1); });
+  document.getElementById("toc-btn").addEventListener("click", function () { toggleToc(); });
+  document.getElementById("fs-btn").addEventListener("click", toggleFs);
+  document.addEventListener("fullscreenchange", function () {
+    root.classList.toggle("fs", !!document.fullscreenElement);
+    fit();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === "ArrowDown" || k === "PageDown" || k === " " || k === "Enter") go(cur + 1);
+    else if (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp" || k === "Backspace") go(cur - 1);
+    else if (k === "Home") go(0);
+    else if (k === "End") go(N - 1);
+    else if (k === "f" || k === "F") toggleFs();
+    else if (k === "t" || k === "T") toggleToc();
+    else if (k === "Escape") toggleToc(false);
+    else return;
+    e.preventDefault();
+  });
+  var x0 = null, y0 = null;
+  document.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > 1.5 * Math.abs(dy)) go(dx < 0 ? cur + 1 : cur - 1);
+    x0 = null;
+  });
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", function () {
+    var n = parseInt(location.hash.slice(1), 10);
+    if (n >= 1 && n <= N && n - 1 !== cur) go(n - 1);
+  });
+
+  var start = parseInt(location.hash.slice(1), 10);
+  fit();
+  go(start >= 1 && start <= N ? start - 1 : 0);
+});
+</script>
+</body>
+</html>
