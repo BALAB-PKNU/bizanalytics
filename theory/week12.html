@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12주차 이론 — 네트워크 분석</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>/* 레이아웃: 1280×720 장을 화면에 맞춰 키우거나 줄여 한 장씩 넘김. 장마다 제목 아래 하고 싶은 말 한 줄, 그 아래 그림이나 표 하나.
+   12주차: 연결망 그림은 모든 장에서 node 위치가 같음. 주황은 그 장에서 보는 node·link, 그룹은 파랑·초록·자주(·금색). 숫자는 고정폭 글꼴 */
+:root {
+  --desk: #dfe4e9; --paper: #fbfcfd; --ink: #18212b; --muted: #5d6874; --rule: #d6dce2; --shade: #eef2f5;
+  --series: #4a5b6c; --accent: #c8701e; --accent-soft: #fbeedf; --trend: #1f7a74; --trend-soft: #e2f1ef; --model: #2b6fcf; --model-soft: #e3ecf9; --alt: #b8437f; --noise: #8a3fa0; --gold: #a7841a;
+  --display: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--desk); color: var(--ink); font-family: var(--body); overflow: hidden; word-break: keep-all; }
+.viewport { position: fixed; inset: 0 0 44px 0; display: flex; align-items: center; justify-content: center; }
+.stage { width: 1280px; height: 720px; position: relative; flex: none; transform-origin: center center; background: var(--paper); box-shadow: 0 2px 18px rgba(20, 30, 40, .12); }
+.slide { position: absolute; inset: 0; padding: 40px 60px 46px; display: none; flex-direction: column; gap: 10px; }
+.slide.cur { display: flex; }
+h2 { margin: 0; font: 600 38px/1.2 var(--display); text-wrap: balance; }
+.msg { margin: 2px 0 6px; font: 500 22px/1.45 var(--body); color: var(--ink); padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.msg math { font-size: 1.05em; }
+.body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.pg { position: absolute; right: 28px; bottom: 18px; margin: 0; font: 400 14px/1 var(--mono); color: var(--muted); }
+p { margin: 0; }
+b { font-family: var(--display); font-weight: 600; color: var(--accent); margin-right: .55em; }
+i { font-style: italic; }
+
+/* 그림 */
+figure { margin: 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+figure svg { display: block; width: 100%; height: auto; }
+figure.full { flex: 1; }
+figure.full svg { flex: 1; min-height: 0; height: 100%; }
+figcaption { font-size: 16px; color: var(--muted); line-height: 1.4; }
+figcaption math { font-size: 1.05em; }
+svg text { font-family: var(--body); }
+svg .ax { fill: var(--muted); font-size: 15px; }
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .zero { stroke: var(--muted); stroke-width: 1.4; }
+svg .ser { fill: none; stroke: var(--series); stroke-width: 2.2; stroke-linejoin: round; }
+svg .pt { fill: var(--series); stroke: var(--paper); stroke-width: 2; }
+svg .q4 { fill: var(--accent); stroke: var(--paper); stroke-width: 2.5; }
+svg .fitline { fill: none; stroke: var(--model); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; opacity: .9; }
+svg .trend { fill: none; stroke: var(--trend); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+svg .fc { fill: none; stroke: var(--model); stroke-width: 3; stroke-dasharray: 8 6; stroke-linecap: round; }
+svg .fcpt { fill: var(--model); stroke: var(--paper); stroke-width: 2.5; }
+svg .src { fill: none; stroke: var(--model); stroke-width: 2.5; }
+svg .arc { fill: none; stroke: var(--model); stroke-width: 2.4; }
+svg .ahead { fill: var(--model); }
+svg .diag { stroke: var(--muted); stroke-width: 2; stroke-dasharray: 7 6; }
+svg .fc.alt { stroke: var(--alt); } svg .fcpt.alt { fill: var(--alt); }
+svg .gapline { stroke: var(--ink); stroke-width: 1.5; }
+svg .bar { fill: var(--series); }
+svg .bar.good { fill: var(--trend); }
+svg .fcbar { fill: var(--accent); }
+svg .fcbar2 { fill: var(--model); }
+svg .future { fill: var(--accent-soft); }
+svg .train { fill: var(--shade); }
+svg .test { fill: var(--accent-soft); }
+svg .bandlab { fill: var(--muted); font-size: 16px; font-weight: 500; }
+svg .qmark { fill: var(--paper); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+svg .qtxt { fill: var(--accent); font-size: 18px; font-weight: 700; }
+svg .now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+svg .ymean { stroke: var(--trend); stroke-width: 6; stroke-linecap: round; opacity: .8; }
+svg .bench { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+svg .val, svg .lab { font-size: 16px; paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+svg .val { fill: var(--ink); font-family: var(--mono); }
+svg .lab { fill: var(--ink); font-weight: 500; }
+svg .lab.acc { fill: var(--accent); }
+svg .lab.teal { fill: var(--trend); }
+svg .lab.model { fill: var(--model); }
+svg .lab.alt { fill: var(--alt); }
+svg .name { fill: var(--ink); font-size: 20px; }
+svg .opendot { fill: var(--paper); stroke: var(--series); stroke-width: 3; }
+svg .link { stroke: var(--rule); stroke-width: 7; stroke-linecap: round; }
+svg .level { stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 7 6; }
+svg .brace { fill: none; stroke: var(--accent); stroke-width: 2; }
+svg .noise { stroke: var(--noise); stroke-width: 3; }
+svg .expect { fill: var(--paper); stroke: var(--noise); stroke-width: 2.5; }
+svg .lead { fill: none; stroke-width: 1.4; stroke-dasharray: 3 4; }
+svg .tagt { font-family: var(--display); font-size: 22px; font-weight: 600; }
+svg .tagd { fill: var(--ink); font-size: 16.5px; }
+svg .k-season { stroke: var(--accent); fill: var(--accent); } svg .k-trend { stroke: var(--trend); fill: var(--trend); }
+svg .k-level { stroke: var(--muted); fill: var(--muted); } svg .k-noise { stroke: var(--noise); fill: var(--noise); }
+svg path.lead { fill: none; }
+
+/* 세로 표 */
+table.lt { border-collapse: collapse; font-size: 19px; font-variant-numeric: tabular-nums; }
+table.lt th { font: 600 16px/1.2 var(--display); color: var(--muted); padding: 6px 14px; border-bottom: 2px solid var(--ink); text-align: right; white-space: nowrap; }
+table.lt td { font-family: var(--mono); padding: 5px 14px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+table.lt th.new { color: var(--accent); background: var(--accent-soft); }
+table.lt td.new { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+table.lt tr.gap td { color: var(--muted); border-bottom: none; padding: 0 14px; line-height: 1.1; }
+table.lt tr.fut td { background: var(--shade); }
+table.lt tr.fut td.new { background: var(--accent-soft); color: var(--accent); }
+table.lt th.fc { color: var(--model); background: var(--model-soft); }
+table.lt td.fc { background: var(--model-soft); }
+table.lt tr.fut td.fc { color: var(--model); font-weight: 600; }
+table.lt.cmp td { padding-block: 3px; }
+table.lt tr.drop td { color: var(--muted); background: var(--shade); }
+table.lt td.hl, table.lt tr.drop td.hl { background: #f3d2ad; color: var(--ink); font-weight: 600; }
+table.lt td.yex { font-weight: 700; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+table.lt th .hsub { display: block; font-weight: 400; font-size: 15px; margin-top: 2px; }
+.xform { flex: 1; min-height: 0; display: grid; grid-template-columns: auto auto auto; gap: 36px; align-items: start; align-content: center; justify-content: center; }
+.xarrow { font: 600 44px/1 var(--display); color: var(--muted); align-self: center; }
+.tcap { font: 600 18px/1.3 var(--display); color: var(--ink); margin: 0 0 4px; }
+table.lt th.grp { text-align: center; border-bottom: 1px solid var(--rule); font-size: 15px; }
+table.lt td.fcin { color: var(--model); background: var(--model-soft); font-weight: 600; }
+table.lt.wide { font-size: 17px; }
+table.lt.wide th, table.lt.wide td { padding-inline: 10px; }
+
+/* 배치 */
+.split { flex: 1; min-height: 0; display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: stretch; }
+.split > .tcol, .split > .text { align-self: center; }
+.split > figure, .stack > figure { height: 100%; min-height: 0; }
+.split > figure svg, .stack > figure svg { flex: 1; min-height: 0; height: 100%; }
+.stack > figure { flex: 1; }
+.stack.nat { justify-content: center; }
+.stack.nat > figure { flex: none; height: auto; }
+.stack.nat > figure svg { flex: none; height: auto; }
+.split.s2 { grid-template-columns: auto 1fr; }
+.split.s3 { grid-template-columns: auto 1fr; gap: 56px; }
+.split.s4 { grid-template-columns: 1.35fr 1fr; gap: 40px; }
+.split.s5 { grid-template-columns: 1.15fr 1fr; gap: 36px; }
+.tcol { display: flex; flex-direction: column; gap: 12px; }
+.stack { display: flex; flex-direction: column; gap: 10px; min-height: 0; height: 100%; }
+.text { display: flex; flex-direction: column; gap: 14px; font-size: 20px; line-height: 1.5; }
+.text p.small, .small { font-size: 16px; color: var(--muted); }
+.text .caveat { font-size: 17px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; }
+.note { font-size: 16px; color: var(--muted); line-height: 1.45; }
+.foot { font-size: 16px; color: var(--muted); line-height: 1.45; }
+.hlx { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+.def, .defs p { font-size: 20px; line-height: 1.5; }
+.defs { display: flex; flex-direction: column; gap: 4px; }
+.eqline { font-size: 26px; }
+math.dm { math-style: normal; }
+.eqline math.dm { display: block; margin: 2px 0; }
+.res { color: var(--model); }
+.eqrow { display: flex; gap: 60px; align-items: center; }
+.eqsmall { font-size: 20px; }
+.eqsmall math.dm { display: block; }
+.big { font: 600 44px/1.1 var(--mono); }
+.big.acc { color: var(--accent); }
+.take { margin-top: auto; font: 500 20px/1.45 var(--display); border-left: 5px solid var(--accent); padding: 2px 0 2px 16px; }
+
+/* 1장 */
+.slide.cover { padding: 0; }
+.cover { padding: 120px 80px 0; }
+.cover .en { font: 500 20px/1 var(--mono); color: var(--accent); margin-bottom: 18px; }
+.cover h1 { margin: 0; font: 700 76px/1.1 var(--display); }
+.cover .course { margin-top: 22px; font-size: 22px; color: var(--muted); }
+.cover-fig { position: absolute; left: 50px; right: 50px; bottom: 60px; }
+.cover-fig figcaption { padding-left: 30px; }
+
+/* 2장 */
+.lst { margin: 8px 0 0; padding-left: 1.2em; font-size: 24px; line-height: 1.6; }
+.lst li { margin: 10px 0; }
+.lst ul { padding-left: 1.2em; font-size: 22px; }
+.lst ul li { margin: 6px 0; }
+.lst b { margin-right: 0; }
+
+/* 3·4장 */
+.lst.sm { font-size: 22px; margin-top: 0; }
+.lst.sm li { margin: 8px 0; }
+.lst.sm ul { font-size: 20px; }
+.lst.sm ul li { margin: 3px 0; }
+.split.s6 { grid-template-columns: 1.3fr 1fr; gap: 36px; align-items: start; }
+.rep { display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--rule); padding-left: 30px; }
+.rep figure svg { height: auto; width: 330px; }
+.rep .lead { font-size: 18px; line-height: 1.45; margin-bottom: 4px; }
+.rep2 { display: flex; gap: 26px; align-items: flex-start; }
+.rep2 > div { display: flex; flex-direction: column; gap: 6px; }
+.rep2 table.lt td, .rep2 table.lt th { padding-inline: 10px; }
+table.lt.ctr { font-size: 18px; }
+.intro { font-size: 21px; line-height: 1.5; margin-bottom: 4px; }
+.pair4 { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: center; gap: 56px; }
+.pair4 figure svg { width: auto; height: 340px; }
+svg.big .nl { font-size: 36px; stroke-width: 9px; }
+.pair4.ex figure { gap: 4px; }
+.pair4.ex figure svg { height: 300px; }
+.pair4.ex table.lt { font-size: 20px; }
+.pair4.ex .eqline { font-size: 24px; }
+table.lt tr.gap2 td { color: var(--muted); }
+.lst .eqline { margin: 4px 0 2px; font-size: 24px; }
+.lst .eqline math.dm { text-align: left; margin-left: 0; }
+.split.s7 { grid-template-columns: 1.3fr 1fr; gap: 36px; align-items: start; }
+.split.s7 > .tcol { align-self: start; }
+ol.steps { padding-left: 1.3em; }
+figure.mini svg { height: 200px; width: auto; }
+.pair4.ex figure.chart svg { height: 270px; }
+.sw.ln { width: 22px !important; height: 4px !important; border-radius: 0 !important; vertical-align: 4px !important; }
+.sw.ln.deg { background: var(--model); } .sw.ln.btw { background: var(--alt); } .sw.ln.rnd { background: var(--muted); }
+table.lt td.g0t, table.lt td.g1t, table.lt td.g2t { white-space: nowrap !important; }
+table.lt td.g0t { color: var(--model); font-weight: 600; } table.lt td.g1t { color: var(--trend); font-weight: 600; } table.lt td.g2t { color: var(--alt); font-weight: 600; }
+.split.s2 figure.chart svg { height: 340px; width: auto; }
+.split.s2.even { align-items: start; flex: none; margin-top: 30px; }
+.split.s2.even figure { height: auto; }
+.split.s2.even figure svg { height: 320px; flex: none; }
+svg .lk.p2 { stroke: var(--model); stroke-width: 4; stroke-dasharray: 9 6; }
+table.lt.ctr td.nm:first-child { font-family: var(--display); font-weight: 600; }
+
+/* 5장 */
+.ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; font-size: 19px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.ways b { display: block; margin-bottom: 2px; }
+
+/* 17장 */
+.metrics { flex: 1; display: grid; grid-template-columns: 2fr 3fr; gap: 28px; }
+.mgrp { display: flex; flex-direction: column; min-width: 0; }
+.glab { font: 600 17px/1 var(--display); color: var(--muted); padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+.mrow { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.mc { padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mc + .mc { border-left: 1px solid var(--rule); }
+.mc h3 { margin: 0; font: 600 26px/1 var(--mono); }
+.mc .f { font-size: 26px; min-height: 64px; display: flex; align-items: center; }
+.mc p { font-size: 17px; color: var(--muted); line-height: 1.4; }
+.mc .big { margin-top: auto; font-size: 40px; color: var(--ink); }
+
+/* 21장 */
+.flow { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-content: start; }
+.flow li { border-top: 3px solid var(--ink); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 18px; line-height: 1.4; }
+.flow .n { font: 600 30px/1 var(--mono); color: var(--accent); }
+.flow b { font-size: 24px; color: var(--ink); }
+.flow em { font-style: normal; font-family: var(--mono); font-size: 17px; color: var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 3px; }
+
+/* 넘김 막대와 목차 */
+.navbar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; display: flex; align-items: center; justify-content: center; gap: 12px; font: 14px var(--body); color: var(--muted); }
+.navbar button { font: 500 14px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.navbar button:focus-visible, .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#count { font-family: var(--mono); min-width: 64px; text-align: center; }
+.toc { position: fixed; top: 16px; right: 16px; bottom: 60px; width: 340px; overflow: auto; background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; box-shadow: 0 6px 24px rgba(20, 30, 40, .18); }
+.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.toc a { color: var(--ink); text-decoration: none; font-size: 15px; line-height: 1.6; }
+.toc a.on { color: var(--accent); font-weight: 600; }
+.nw { white-space: nowrap; }
+[hidden] { display: none !important; }
+
+/* 12주차: 연결망 */
+svg .lk { stroke: #b4bec8; stroke-width: 2.4; }
+svg .lk.hl { stroke: var(--accent); stroke-width: 6; stroke-linecap: round; }
+svg .lk.cc { stroke: var(--trend); stroke-width: 3; opacity: .7; }
+svg .lk.gone { stroke: #c9d0d7; stroke-width: 1.6; stroke-dasharray: 5 5; }
+svg .lk.btw { stroke: var(--ink); stroke-width: 5; stroke-linecap: round; }
+svg .lk.g0 { stroke: var(--model); stroke-width: 3; opacity: .55; }
+svg .lk.g1 { stroke: var(--trend); stroke-width: 3; opacity: .55; }
+svg .lk.g2 { stroke: var(--alt); stroke-width: 3; opacity: .55; }
+svg .lk.g3 { stroke: var(--gold); stroke-width: 3; opacity: .7; }
+svg .nd { fill: var(--series); stroke: var(--paper); stroke-width: 3; }
+svg .nd.hl, svg .nd.cut { fill: var(--accent); }
+svg .nd.hl2 { fill: var(--paper); stroke: var(--accent); stroke-width: 4; }
+svg .nd.cc { fill: var(--trend); }
+svg .nd.gone { fill: var(--paper); stroke: var(--muted); stroke-width: 2; stroke-dasharray: 4 3; }
+svg .nd.g0 { fill: var(--model); } svg .nd.g1 { fill: var(--trend); } svg .nd.g2 { fill: var(--alt); } svg .nd.g3 { fill: var(--gold); }
+svg .nl { font-size: 24px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 7px; stroke-linejoin: round; }
+svg .nl.gone { fill: var(--muted); }
+svg .nl.hl, svg .nl.cut, svg .nl.hl2 { fill: var(--accent); font-weight: 600; }
+svg .nv { font-family: var(--mono); font-weight: 600; fill: var(--accent); }
+svg .sc { fill: var(--series); stroke: var(--paper); stroke-width: 2; }
+svg .sc.hl { fill: var(--accent); }
+svg .rl { fill: none; stroke-width: 3; stroke-linejoin: round; }
+svg .rl.deg, svg .rp.deg { stroke: var(--model); } svg .rp.deg { fill: var(--model); }
+svg .rl.btw, svg .rp.btw { stroke: var(--alt); } svg .rp.btw { fill: var(--alt); }
+svg .rl.rnd { stroke: var(--muted); stroke-dasharray: 7 5; } svg .rp.rnd { fill: var(--muted); stroke: none; }
+svg .rl.q { stroke: var(--model); } svg .rp.q { fill: var(--model); stroke: none; }
+svg .lab.deg { fill: var(--model); } svg .lab.btw { fill: var(--alt); } svg .lab.rnd { fill: var(--muted); }
+table.lt td.nm, table.lt th.nm { font-family: var(--body); text-align: left; }
+table.lt.wrap td.nm { white-space: normal; }
+table.lt tr.hlrow td { background: var(--accent-soft); }
+table.lt tr.sum td { border-top: 2px solid var(--ink); font-weight: 600; }
+table.lt td.qv { font-weight: 600; }
+table.lt.small { font-size: 17px; } table.lt.small th, table.lt.small td { padding: 3px 10px; }
+table.lt.tiny { font-size: 15px; } table.lt.tiny th, table.lt.tiny td { padding: 2px 8px; }
+table.lt.summary { width: 100%; font-size: 21px; } table.lt.summary td { white-space: normal; padding: 8px 14px; }
+.glegend { font-size: 18px; } .glegend .sw { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin: 0 6px 0 14px; vertical-align: -1px; }
+.glegend .sw:first-child { margin-left: 0; }
+.sw.g0 { background: var(--model); } .sw.g1 { background: var(--trend); } .sw.g2 { background: var(--alt); } .sw.g3 { background: var(--gold); }
+.split.even { grid-template-columns: 1fr 1fr; }
+.big-eq { font-size: 34px; }
+.glegend .gi { white-space: nowrap; display: inline-block; margin-right: 16px; } .glegend .sw { margin-left: 0; }
+.dq { display: flex; gap: 48px; align-items: center; border-top: 1px solid var(--rule); padding-top: 14px; margin-top: 18px; }
+.slide.cover .cover-fig.net { left: 520px; right: 30px; top: 40px; bottom: 40px; display: flex; flex-direction: column; justify-content: center; }
+.slide.cover .cover-fig.net figcaption { padding-left: 0; text-align: right; }
+</style></head>
+<body>
+<div class="viewport"><main class="stage" id="stage"><section class="slide cover" data-title="네트워크 분석"><div class="body">
+<div class="cover">
+  <p class="en">Network Analysis</p>
+  <h1>네트워크 분석</h1>
+  <p class="course">비즈니스 애널리틱스 · 12주차</p>
+</div>
+<figure class="cover-fig net"><svg class="" viewBox="-70 -50 1140 650" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk " x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk " x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk " x1="560" y1="190" x2="400" y2="270"/><line class="lk " x1="560" y1="190" x2="760" y2="140"/><line class="lk " x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="13"/><text class="nl " x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd " cx="560" cy="190" r="13"/><text class="nl " x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd " cx="760" cy="140" r="13"/><text class="nl " x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd " cx="930" cy="100" r="13"/><text class="nl " x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd " cx="240" cy="275" r="13"/><text class="nl " x="253.8" y="261.2" text-anchor="start">Strozzi</text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="13"/><text class="nl " x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="13"/><text class="nl " x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="13"/><text class="nl " x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="13"/><text class="nl " x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="790" y="555" text-anchor="middle">Lamberteschi</text></svg><figcaption>15세기 피렌체 15개 가문의 혼인 관계, 이번 주 이론의 예시 자료</figcaption></figure></div><p class="pg">1 / 21</p></section><section class="slide " data-title="네트워크 분석이란"><h2>도입: 네트워크 분석이란</h2><div class="body">
+<ul class="lst">
+  <li><b>네트워크 분석</b>(network analysis): 대상 사이의 연결 관계를 이용하여, 연결망에서 중요한 대상과 서로 밀접하게 연결된 그룹을 찾는 방법</li>
+  <li>네트워크 분석 적용분야
+    <ul>
+      <li>항공·물류: 노선 연결망에서 많은 경로가 지나는 거점을 찾아, 거점이 멈출 때 쓸 우회 노선을 마련함</li>
+      <li>공급망: 거래 연결망에서 대체 경로가 없는 거래처를 찾아 공급처를 늘림</li>
+      <li>조직 관리: 이메일·협업 연결망에서 부서 사이를 잇는 사람을 찾아 정보 전달 경로와 인력 배치를 정함</li>
+      <li>마케팅: 고객 사이의 추천 연결망에서 많은 고객과 이어진 고객을 찾아 홍보 대상을 정함</li>
+    </ul></li>
+</ul></div><p class="pg">2 / 21</p></section><section class="slide " data-title="네트워크 데이터의 특징과 표현"><h2>도입: 네트워크 데이터의 특징과 표현</h2><div class="body">
+<div class="split s6">
+  <ul class="lst sm">
+    <li><b>네트워크 데이터</b>(network data): 대상과 대상 사이의 관계를 기록한 데이터
+      <ul>
+        <li>node: 네트워크를 이루는 대상, 예: 사람, 회사, 공항</li>
+        <li>link(arc, edge): 두 node를 잇는 관계, 예: 친구 관계, 거래, 항공 노선</li>
+      </ul></li>
+    <li>회귀·분류 데이터와의 차이
+      <ul>
+        <li>회귀·분류 데이터: 한 행이 대상 하나, 열은 그 대상의 속성</li>
+        <li>네트워크 데이터: 한 행이 두 대상 사이의 관계 하나</li>
+      </ul></li>
+    <li>link의 방향과 가중치
+      <ul>
+        <li>방향이 있는 link: A → B와 B → A를 구별함, 예: 이메일, 송금</li>
+        <li>방향이 없는 link: A → B와 B → A를 구별하지 않음, 예: 친구 관계</li>
+        <li>가중치가 있는 link: 관계의 횟수나 크기를 기록함, 예: 운항 편수, 거래액</li>
+        <li>가중치가 없는 link: 관계가 있는지 없는지만 기록함</li>
+      </ul></li>
+  </ul>
+  <div class="rep">
+    <p class="tcap">네트워크 데이터의 표현</p>
+    <p class="lead">아래 그림, link 목록, 인접 행렬은 모두 node 4개, link 4개인 같은 네트워크를 나타냄</p>
+    <figure><svg viewBox="0 0 470 195" role="img"><line class="lk" x1="50" y1="40" x2="50" y2="170"/><line class="lk" x1="50" y1="40" x2="230" y2="105"/><line class="lk" x1="50" y1="170" x2="230" y2="105"/><line class="lk" x1="230" y1="105" x2="410" y2="105"/><circle class="nd" cx="50" cy="40" r="15"/><text class="nl" x="50" y="16" text-anchor="middle">A</text><circle class="nd" cx="50" cy="170" r="15"/><text class="nl" x="50" y="146" text-anchor="middle">B</text><circle class="nd" cx="230" cy="105" r="15"/><text class="nl" x="230" y="81" text-anchor="middle">C</text><circle class="nd" cx="410" cy="105" r="15"/><text class="nl" x="410" y="81" text-anchor="middle">D</text></svg><figcaption>그림: node를 점, link를 선으로 그림</figcaption></figure>
+    <div class="rep2">
+      <div><table class="lt cmp"><tr><th class="nm">node</th><th class="nm">node</th></tr><tr class=""><td class="nm">A</td><td class="nm">B</td></tr><tr class=""><td class="nm">A</td><td class="nm">C</td></tr><tr class=""><td class="nm">B</td><td class="nm">C</td></tr><tr class=""><td class="nm">C</td><td class="nm">D</td></tr></table><p class="note">link 목록(edge list): 한 행에 link 하나</p></div>
+      <div><table class="lt cmp"><tr><th class="nm"></th><th class="">A</th><th class="">B</th><th class="">C</th><th class="">D</th></tr><tr class=""><td class="nm">A</td><td class="">0</td><td class="">1</td><td class="">1</td><td class="">0</td></tr><tr class=""><td class="nm">B</td><td class="">1</td><td class="">0</td><td class="">1</td><td class="">0</td></tr><tr class=""><td class="nm">C</td><td class="">1</td><td class="">1</td><td class="">0</td><td class="">1</td></tr><tr class=""><td class="nm">D</td><td class="">0</td><td class="">0</td><td class="">1</td><td class="">0</td></tr></table><p class="note">인접 행렬(adjacency matrix): 행과 열이 node, link가 있으면 1, 없으면 0</p></div>
+    </div>
+  </div>
+</div></div><p class="pg">3 / 21</p></section><section class="slide " data-title="네트워크 데이터 예시: 피렌체 가문의 혼인 관계"><h2>도입: 네트워크 데이터 예시: 피렌체 가문의 혼인 관계</h2><div class="body">
+<p class="intro">15세기 피렌체 가문들의 혼인 관계를 네트워크 데이터로 나타내고, 어느 가문이 네트워크에서 중요한 위치에 있었는지 살펴봄</p>
+<table class="lt cmp ctr"><tr><th class="nm"></th><th class="nm">정의</th><th class="nm">피렌체 가문의 혼인 관계</th></tr><tr class=""><td class="nm">node</td><td class="nm">네트워크를 이루는 대상</td><td class="new nm">피렌체의 가문 하나, 15개</td></tr><tr class=""><td class="nm">link</td><td class="nm">두 node를 잇는 관계</td><td class="new nm">두 가문 사이의 혼인 관계, 20개</td></tr><tr class=""><td class="nm">방향</td><td class="nm">A → B와 B → A를 구별하는지</td><td class="new nm">없음: 혼인은 두 가문이 함께 맺는 관계</td></tr><tr class=""><td class="nm">가중치</td><td class="nm">관계의 횟수나 크기를 기록하는지</td><td class="new nm">없음: 혼인이 있었는지만 기록함</td></tr></table>
+<div class="pair4">
+  <div class="tcol"><table class="lt cmp"><tr><th class="">행</th><th class="nm">가문 A</th><th class="nm">가문 B</th></tr><tr class=""><td class="">1</td><td class="nm">Acciaiuoli</td><td class="nm">Medici</td></tr><tr class=""><td class="">2</td><td class="nm">Albizzi</td><td class="nm">Ginori</td></tr><tr class=""><td class="">3</td><td class="nm">Albizzi</td><td class="nm">Guadagni</td></tr><tr class="gap"><td class="">⋮</td><td class="nm">⋮</td><td class="nm">⋮</td></tr><tr class=""><td class="">20</td><td class="nm">Ridolfi</td><td class="nm">Tornabuoni</td></tr></table>
+    <p class="note">link 목록 20행 중 일부, 한 행이 혼인 관계 하나<br>자료: Padgett·Ansell(1993)</p></div>
+  <figure><svg class="" viewBox="-70 -30 1140 620" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk " x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk " x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk " x1="560" y1="190" x2="400" y2="270"/><line class="lk " x1="560" y1="190" x2="760" y2="140"/><line class="lk " x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="13"/><text class="nl " x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd " cx="560" cy="190" r="13"/><text class="nl " x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd " cx="760" cy="140" r="13"/><text class="nl " x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd " cx="930" cy="100" r="13"/><text class="nl " x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd " cx="240" cy="275" r="13"/><text class="nl " x="253.8" y="261.2" text-anchor="start">Strozzi</text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="13"/><text class="nl " x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="13"/><text class="nl " x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="13"/><text class="nl " x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="13"/><text class="nl " x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="790" y="555" text-anchor="middle">Lamberteschi</text></svg></figure>
+</div></div><p class="pg">4 / 21</p></section><section class="slide " data-title="경로와 거리"><h2>도입: 경로와 거리</h2><div class="body">
+<ul class="lst sm">
+  <li><b>경로</b>(path): 서로 다른 두 node 사이를 link를 따라 도달하는 방법, 지나는 node를 차례로 나열해 나타냄</li>
+  <li><b>경로의 길이</b>: 경로에 들어 있는 link의 수</li>
+  <li><b>최단 경로</b>(shortest path): 두 node를 잇는 경로 중 길이가 가장 짧은 경로, 여러 개일 수 있음</li>
+  <li><b>거리</b>(distance) <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>u</mi><mo>&#x0002C;</mo><mi>v</mi><mo stretchy="false">&#x00029;</mo></mrow></math>: 두 node <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>u</mi></mrow></math>, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>v</mi></mrow></math> 사이 최단 경로의 길이, 두 node를 잇는 경로가 없으면 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mo>&#x0221E;</mo></mrow></math></li>
+</ul>
+<div class="pair4">
+  <figure><svg class="" viewBox="-70 -30 1140 620" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk " x1="720" y1="330" x2="560" y2="190"/><line class="lk p2" x1="330" y1="70" x2="120" y2="110"/><line class="lk p2" x1="330" y1="70" x2="560" y2="190"/><line class="lk p2" x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk p2" x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk p2" x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk p2" x1="560" y1="500" x2="480" y2="385"/><line class="lk hl" x1="560" y1="190" x2="400" y2="270"/><line class="lk " x1="560" y1="190" x2="760" y2="140"/><line class="lk p2" x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk hl" x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="13"/><text class="nl " x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd hl" cx="560" cy="190" r="13"/><text class="nl hl" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd " cx="760" cy="140" r="13"/><text class="nl " x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd " cx="930" cy="100" r="13"/><text class="nl " x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd hl" cx="240" cy="275" r="13"/><text class="nl hl" x="253.8" y="261.2" text-anchor="start">Strozzi</text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd hl" cx="400" cy="270" r="13"/><text class="nl hl" x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="13"/><text class="nl " x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="13"/><text class="nl " x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="13"/><text class="nl " x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="790" y="555" text-anchor="middle">Lamberteschi</text></svg></figure>
+  <div class="tcol">
+    <p class="tcap">예: Medici와 Strozzi를 잇는 경로 중 셋</p>
+    <table class="lt cmp"><tr><th class="nm">경로</th><th class="">길이</th></tr><tr class="hlrow"><td class="nm">Medici – Ridolfi – Strozzi</td><td class="">2</td></tr><tr class=""><td class="nm">Medici – Barbadori – Castellani – Strozzi</td><td class="">3</td></tr><tr class=""><td class="nm">Medici – Tornabuoni – Guadagni – Bischeri – Strozzi</td><td class="">4</td></tr></table>
+    <p class="note">주황: 최단 경로, 파랑 점선: 더 긴 경로</p>
+    <p class="eqline"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>d</mi><mo stretchy="false">&#x00028;</mo><mtext>Medici</mtext><mo>&#x0002C;</mo><mtext>Strozzi</mtext><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mn>2</mn></mrow></math></p>
+  </div>
+</div></div><p class="pg">5 / 21</p></section><section class="slide " data-title="네트워크 분석의 방법과 지표"><h2>도입: 네트워크 분석의 방법과 지표</h2><div class="body">
+<ul class="lst sm">
+  <li><b>네트워크 분석의 목적</b>
+    <ul>
+      <li>개별 node의 네트워크 안에서의 중요도를 다양한 지표를 통해 평가</li>
+      <li>서로 밀접한 연관이 있는 community를 그룹핑하여 발견</li>
+    </ul></li>
+  <li><b>node의 중요도 지표</b>
+    <ul>
+      <li>centrality: 얼마나 중요한 위치를 차지하는가
+        <ul>
+          <li>degree centrality: 얼마나 많은 node와 직접 이어져 있는가</li>
+          <li>betweenness centrality: 다른 node들 사이를 얼마나 많이 잇고 있는가</li>
+        </ul></li>
+      <li>robustness: 그 node가 빠지면 네트워크에서 떨어져 나가는 node가 몇 개인가</li>
+    </ul></li>
+  <li><b>community detection</b>
+    <ul>
+      <li>modularity: 그룹 안쪽이 그룹 사이보다 얼마나 촘촘하게 이어져 있는가</li>
+      <li>greedy modularity algorithm: modularity가 커지도록 그룹을 차례로 합쳐 community를 찾는 방법</li>
+    </ul></li>
+</ul></div><p class="pg">6 / 21</p></section><section class="slide " data-title="Medici와 Strozzi"><h2>도입: Medici와 Strozzi</h2><div class="body">
+<ul class="lst sm">
+  <li>1427년 재산과 시의회 의석은 Strozzi가 가장 많았으나, 1434년 이후 피렌체를 이끈 가문은 Medici</li>
+  <li>혼인 네트워크에서 두 가문의 위치가 어떻게 달랐는지 살펴봄</li>
+</ul>
+<div class="split s4">
+  <figure><svg class="" viewBox="-70 -40 1140 660" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk " x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk " x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk " x1="560" y1="190" x2="400" y2="270"/><line class="lk " x1="560" y1="190" x2="760" y2="140"/><line class="lk " x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="7.0"/><text class="nl " x="575.0" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd hl" cx="560" cy="190" r="16.3"/><text class="nl hl" x="575.78" y="174.22" text-anchor="start">Medici</text><circle class="nd " cx="760" cy="140" r="7.0"/><text class="nl " x="760" y="124.0" text-anchor="middle">Salviati</text><circle class="nd " cx="930" cy="100" r="10.8"/><text class="nl " x="930" y="80.2" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="11.5"/><text class="nl " x="330" y="49.5" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="8.0"/><text class="nl " x="120" y="93.0" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="10.9"/><text class="nl " x="31.1" y="306" text-anchor="end">Peruzzi</text><circle class="nd hl" cx="240" cy="275" r="20.6"/><text class="nl hl" x="258.36" y="256.64" text-anchor="start">Strozzi</text><circle class="nd " cx="150" cy="460" r="10.4"/><text class="nl " x="150" y="492.4" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="8.7"/><text class="nl " x="400" y="252.3" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="10.8"/><text class="nl " x="498.8" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="9.6"/><text class="nl " x="737.6" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="9.2"/><text class="nl " x="920" y="421.2" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="6.8"/><text class="nl " x="560" y="528.8" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="10.2"/><text class="nl " x="790" y="552.2" text-anchor="middle">Lamberteschi</text></svg><figcaption>점의 크기: 1427년 재산, 주황: Medici와 Strozzi</figcaption></figure>
+  <div class="tcol">
+    <table class="lt cmp"><tr><th class="">순위</th><th class="nm">재산(1427년, 천 리라)</th><th class="nm">시의회 의석(1282~1344년)</th></tr><tr class=""><td class="">1위</td><td class="hl nm">Strozzi 146</td><td class="hl nm">Strozzi 74</td></tr><tr class=""><td class="">2위</td><td class="hl nm">Medici 103</td><td class="nm">Albizzi 65</td></tr><tr class=""><td class="">3위</td><td class="nm">Barbadori 55</td><td class="hl nm">Acciaiuoli·Medici 53</td></tr></table>
+    <div class="text">
+      <p>1433년 반대 세력이 Cosimo de' Medici를 피렌체에서 추방</p>
+      <p>1434년 Cosimo가 돌아온 뒤 60년 동안 Medici가 피렌체 정치를 이끔</p>
+    </div>
+    <p class="note">자료: Padgett·Ansell(1993) · 재산은 가문의 순재산, 의석은 시의회(priorate) 의석 수</p>
+  </div>
+</div></div><p class="pg">7 / 21</p></section><section class="slide " data-title="degree centrality"><h2>centrality: degree centrality</h2><div class="body">
+<ul class="lst sm">
+  <li><b>정의</b>: degree centrality는 node <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>의 degree <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>k</mi><mi>i</mi></msub></mrow></math>, 즉 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>에 직접 이어진 link의 수
+    <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>k</mi><mi>i</mi></msub><mo>&#x0003D;</mo><msub><mo>&#x02211;</mo><mrow><mi>j</mi></mrow></msub><msub><mi>a</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow></math></div>
+    <ul><li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>a</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow></math>: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>와 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>j</mi></mrow></math> 사이에 link가 있으면 1, 없으면 0</li></ul></li>
+  <li><b>의미</b>: 이웃이 많은 node일수록 다른 node와 직접 주고받는 관계가 많아 중요한 위치에 있다고 봄</li>
+</ul>
+<div class="pair4 ex">
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk hl" x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk hl" x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk hl" x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk hl" x1="560" y1="190" x2="400" y2="270"/><line class="lk hl" x1="560" y1="190" x2="760" y2="140"/><line class="lk hl" x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="13"/><text class="nl " x="581" y="46" text-anchor="start">Acciaiuoli <tspan class="nv">1</tspan></text><circle class="nd hl" cx="560" cy="190" r="13"/><text class="nl hl" x="573.8" y="176.2" text-anchor="start">Medici <tspan class="nv">6</tspan></text><circle class="nd " cx="760" cy="140" r="13"/><text class="nl " x="760" y="118" text-anchor="middle">Salviati <tspan class="nv">2</tspan></text><circle class="nd " cx="930" cy="100" r="13"/><text class="nl " x="930" y="78" text-anchor="middle">Pazzi <tspan class="nv">1</tspan></text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori <tspan class="nv">2</tspan></text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani <tspan class="nv">3</tspan></text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi <tspan class="nv">3</tspan></text><circle class="nd " cx="240" cy="275" r="13"/><text class="nl " x="219" y="281" text-anchor="end">Strozzi <tspan class="nv">4</tspan></text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri <tspan class="nv">3</tspan></text><circle class="nd " cx="400" cy="270" r="13"/><text class="nl " x="400" y="248" text-anchor="middle">Ridolfi <tspan class="nv">3</tspan></text><circle class="nd " cx="480" cy="385" r="13"/><text class="nl " x="501" y="391" text-anchor="start">Tornabuoni <tspan class="nv">3</tspan></text><circle class="nd " cx="720" cy="330" r="13"/><text class="nl " x="741" y="336" text-anchor="start">Albizzi <tspan class="nv">3</tspan></text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori <tspan class="nv">1</tspan></text><circle class="nd " cx="560" cy="500" r="13"/><text class="nl " x="560" y="535" text-anchor="middle">Guadagni <tspan class="nv">4</tspan></text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="811" y="526" text-anchor="start">Lamberteschi <tspan class="nv">1</tspan></text></svg><figcaption>이름 옆 숫자: 가문마다 계산한 degree centrality</figcaption></figure>
+  <div class="tcol">
+    <p class="tcap">계산 예: Medici</p>
+    <table class="lt cmp"><tr><th class="nm">가문 j</th><th class="">a<sub>Medici, j</sub></th></tr><tr class=""><td class="nm">Acciaiuoli</td><td class="">1</td></tr><tr class=""><td class="nm">Albizzi</td><td class="">1</td></tr><tr class=""><td class="nm">Barbadori</td><td class="">1</td></tr><tr class=""><td class="nm">Ridolfi</td><td class="">1</td></tr><tr class=""><td class="nm">Salviati</td><td class="">1</td></tr><tr class=""><td class="nm">Tornabuoni</td><td class="">1</td></tr><tr class="gap2"><td class="nm">나머지 8개 가문</td><td class="">0</td></tr></table>
+    <p class="eqline"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>k</mi><mrow><mtext>Medici</mtext></mrow></msub><mo>&#x0003D;</mo><mn>1</mn><mo>&#x0002B;</mo><mn>1</mn><mo>&#x0002B;</mo><mn>1</mn><mo>&#x0002B;</mo><mn>1</mn><mo>&#x0002B;</mo><mn>1</mn><mo>&#x0002B;</mo><mn>1</mn><mo>&#x0003D;</mo><mn>6</mn></mrow></math></p>
+  </div>
+</div></div><p class="pg">8 / 21</p></section><section class="slide " data-title="betweenness centrality"><h2>centrality: betweenness centrality</h2><div class="body">
+<ul class="lst sm">
+  <li><b>정의</b>: betweenness centrality는 다른 두 node 사이의 최단 경로가 node <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>를 얼마나 지나는지 나타내는 값
+    <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>b</mi><mi>i</mi></msub><mo>&#x0003D;</mo><msub><mo>&#x02211;</mo><mrow><mi>s</mi><mo>&#x0003C;</mo><mi>t</mi><mo>&#x0002C;</mo><mspace width="0.278em" /><mi>s</mi><mo>&#x0002C;</mo><mi>t</mi><mo>&#x02260;</mo><mi>i</mi></mrow></msub><mfrac><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo></mrow><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></mfrac></mrow></math></div>
+    <ul><li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></math>: node <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>s</mi></mrow></math>와 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>t</mi></mrow></math>를 잇는 최단 경로의 개수</li>
+        <li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo></mrow></math>: 그중 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>를 지나는 최단 경로의 개수</li></ul></li>
+  <li><b>의미</b>: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>b</mi><mi>i</mi></msub></mrow></math>가 클수록 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>는 다른 node들 사이를 이어 주는 위치에 있어 중요하다고 봄</li>
+</ul>
+<div class="pair4 ex">
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk hl" x1="720" y1="330" x2="560" y2="500"/><line class="lk hl" x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk " x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk hl" x1="560" y1="500" x2="480" y2="385"/><line class="lk " x1="560" y1="190" x2="400" y2="270"/><line class="lk " x1="560" y1="190" x2="760" y2="140"/><line class="lk hl" x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="13"/><text class="nl " x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd hl" cx="560" cy="190" r="13"/><text class="nl hl" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd " cx="760" cy="140" r="13"/><text class="nl " x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd " cx="930" cy="100" r="13"/><text class="nl " x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd " cx="240" cy="275" r="13"/><text class="nl " x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="13"/><text class="nl " x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd hl2" cx="480" cy="385" r="13"/><text class="nl hl2" x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd hl2" cx="720" cy="330" r="13"/><text class="nl hl2" x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd hl" cx="560" cy="500" r="13"/><text class="nl hl" x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="811" y="526" text-anchor="start">Lamberteschi</text></svg></figure>
+  <div class="tcol">
+    <p class="tcap">계산 예: Guadagni와 Medici 쌍</p>
+    <p class="note">그림의 주황: 두 가문을 잇는 최단 경로 2개</p>
+    <table class="lt cmp"><tr><th class="nm">최단 경로</th><th class="nm">Albizzi</th><th class="nm">Tornabuoni</th></tr><tr class=""><td class="nm">Guadagni – Albizzi – Medici</td><td class="nm">지남</td><td class="nm">지나지 않음</td></tr><tr class=""><td class="nm">Guadagni – Tornabuoni – Medici</td><td class="nm">지나지 않음</td><td class="nm">지남</td></tr></table>
+    <p class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo>&#x0003D;</mo><mn>2</mn><mo>&#x0002C;</mo><mspace width="1em" /><mfrac><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mtext>Albizzi</mtext><mo stretchy="false">&#x00029;</mo></mrow><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></mfrac><mo>&#x0003D;</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo>&#x0002C;</mo><mspace width="1em" /><mfrac><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mtext>Tornabuoni</mtext><mo stretchy="false">&#x00029;</mo></mrow><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></mfrac><mo>&#x0003D;</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac></mrow></math></p>
+    <p class="note">이 쌍에서 Albizzi와 Tornabuoni의 betweenness centrality에 각각 1/2씩 더해짐</p>
+  </div>
+</div></div><p class="pg">9 / 21</p></section><section class="slide " data-title="betweenness centrality 계산 예"><h2>centrality: betweenness centrality 계산 예</h2><div class="body">
+<div class="split s7">
+  <div class="tcol">
+    <p class="tcap">Salviati의 betweenness centrality 계산 절차</p>
+    <ol class="lst sm steps">
+      <li>Salviati를 뺀 14개 가문으로 쌍 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mo stretchy="false">&#x00028;</mo><mi>s</mi><mo>&#x0002C;</mo><mi>t</mi><mo stretchy="false">&#x00029;</mo></mrow></math>를 만듦: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mn>14</mn><mo>&#x000D7;</mo><mn>13</mn><mo>&#x0002F;</mo><mn>2</mn><mo>&#x0003D;</mo><mn>91</mn></mrow></math>쌍</li>
+      <li>쌍마다 최단 경로의 수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></math>와 그중 Salviati를 지나는 경로의 수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mtext>Salviati</mtext><mo stretchy="false">&#x00029;</mo></mrow></math>를 셈</li>
+      <li>쌍마다 비율 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mtext>Salviati</mtext><mo stretchy="false">&#x00029;</mo><mo>&#x0002F;</mo><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></math>를 구해 91쌍에 대해 더함</li>
+    </ol>
+    <p class="note">Salviati의 이웃은 Pazzi와 Medici, Pazzi의 이웃은 Salviati뿐이므로 Salviati를 지나는 최단 경로는 Pazzi가 들어간 쌍에만 있음</p>
+    <figure class="mini"><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk " x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk " x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk " x1="560" y1="190" x2="400" y2="270"/><line class="lk hl" x1="560" y1="190" x2="760" y2="140"/><line class="lk " x1="560" y1="190" x2="480" y2="385"/><line class="lk hl" x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="13"/><text class="nl " x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd " cx="560" cy="190" r="13"/><text class="nl " x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd hl" cx="760" cy="140" r="13"/><text class="nl hl" x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd hl2" cx="930" cy="100" r="13"/><text class="nl hl2" x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd " cx="240" cy="275" r="13"/><text class="nl " x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="13"/><text class="nl " x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="13"/><text class="nl " x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="13"/><text class="nl " x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="13"/><text class="nl " x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="811" y="526" text-anchor="start">Lamberteschi</text></svg></figure>
+  </div>
+  <div class="tcol">
+    <table class="lt cmp tiny"><tr><th class="nm">쌍 (s, t)</th><th class="">σ<sub>st</sub></th><th class="">σ<sub>st</sub>(Salviati)</th><th class="">비율</th></tr><tr class=""><td class="nm">Pazzi, Acciaiuoli</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Albizzi</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Barbadori</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Bischeri</td><td class="">3</td><td class="">3</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Castellani</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Ginori</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Guadagni</td><td class="">2</td><td class="">2</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Lamberteschi</td><td class="">2</td><td class="">2</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Medici</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Peruzzi</td><td class="">2</td><td class="">2</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Ridolfi</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Strozzi</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class=""><td class="nm">Pazzi, Tornabuoni</td><td class="">1</td><td class="">1</td><td class="">1</td></tr><tr class="gap2"><td class="nm">Pazzi가 없는 78쌍</td><td class=""></td><td class="">0</td><td class="">0</td></tr><tr class="sum"><td class="nm">합 (91쌍)</td><td class=""></td><td class=""></td><td class="">13</td></tr></table>
+    <p class="eqline"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>b</mi><mrow><mtext>Salviati</mtext></mrow></msub><mo>&#x0003D;</mo><mn>13</mn></mrow></math></p>
+  </div>
+</div></div><p class="pg">10 / 21</p></section><section class="slide " data-title="degree centrality와 betweenness centrality의 순위"><h2>centrality: degree centrality와 betweenness centrality의 순위</h2><div class="body">
+<div class="split s5">
+  <figure><svg viewBox="0 0 520 420" role="img"><line class="grid" x1="64" x2="500" y1="370.0" y2="370.0"/><text class="ax" x="56" y="375.0" text-anchor="end">0</text><line class="grid" x1="64" x2="500" y1="304.0" y2="304.0"/><text class="ax" x="56" y="309.0" text-anchor="end">10</text><line class="grid" x1="64" x2="500" y1="238.0" y2="238.0"/><text class="ax" x="56" y="243.0" text-anchor="end">20</text><line class="grid" x1="64" x2="500" y1="172.0" y2="172.0"/><text class="ax" x="56" y="177.0" text-anchor="end">30</text><line class="grid" x1="64" x2="500" y1="106.0" y2="106.0"/><text class="ax" x="56" y="111.0" text-anchor="end">40</text><line class="grid" x1="64" x2="500" y1="40.0" y2="40.0"/><text class="ax" x="56" y="45.0" text-anchor="end">50</text><text class="ax" x="64.0" y="392" text-anchor="middle">0</text><text class="ax" x="131.1" y="392" text-anchor="middle">1</text><text class="ax" x="198.2" y="392" text-anchor="middle">2</text><text class="ax" x="265.2" y="392" text-anchor="middle">3</text><text class="ax" x="332.3" y="392" text-anchor="middle">4</text><text class="ax" x="399.4" y="392" text-anchor="middle">5</text><text class="ax" x="466.5" y="392" text-anchor="middle">6</text><text class="ax" x="282.0" y="414" text-anchor="middle">degree centrality</text><text class="ax" x="24" y="22" text-anchor="start">betweenness centrality</text><circle class="sc " cx="131.1" cy="370.0" r="7"/><circle class="sc " cx="466.5" cy="56.5" r="7"/><text class="lab " x="454.5" y="61.5" text-anchor="end">Medici</text><circle class="sc " cx="265.2" cy="337.0" r="7"/><circle class="sc " cx="265.2" cy="356.8" r="7"/><circle class="sc " cx="332.3" cy="308.4" r="7"/><circle class="sc " cx="198.2" cy="313.9" r="7"/><circle class="sc " cx="265.2" cy="301.8" r="7"/><circle class="sc " cx="265.2" cy="315.0" r="7"/><circle class="sc " cx="265.2" cy="242.4" r="7"/><text class="lab " x="277.2" y="247.4" text-anchor="start">Albizzi</text><circle class="sc " cx="198.2" cy="284.2" r="7"/><text class="lab " x="210.2" y="289.2" text-anchor="start">Salviati</text><circle class="sc " cx="131.1" cy="370.0" r="7"/><circle class="sc " cx="265.2" cy="307.3" r="7"/><circle class="sc " cx="332.3" cy="217.1" r="7"/><text class="lab " x="344.3" y="222.1" text-anchor="start">Guadagni</text><circle class="sc " cx="131.1" cy="370.0" r="7"/><circle class="sc " cx="131.1" cy="370.0" r="7"/></svg></figure>
+  <div class="tcol"><table class="lt cmp tiny"><tr><th class="nm">가문</th><th class="">degree</th><th class="">순위</th><th class="">betweenness</th><th class="">순위</th></tr><tr class=""><td class="nm">Medici</td><td class="">6</td><td class="">1위</td><td class="">47.50</td><td class="">1위</td></tr><tr class=""><td class="nm">Guadagni</td><td class="">4</td><td class="">공동 2위</td><td class="">23.17</td><td class="">2위</td></tr><tr class=""><td class="nm">Albizzi</td><td class="">3</td><td class="">공동 4위</td><td class="">19.33</td><td class="">3위</td></tr><tr class=""><td class="nm">Salviati</td><td class="">2</td><td class="">공동 10위</td><td class="">13.00</td><td class="">4위</td></tr><tr class=""><td class="nm">Ridolfi</td><td class="">3</td><td class="">공동 4위</td><td class="">10.33</td><td class="">5위</td></tr><tr class=""><td class="nm">Bischeri</td><td class="">3</td><td class="">공동 4위</td><td class="">9.50</td><td class="">6위</td></tr><tr class=""><td class="nm">Strozzi</td><td class="">4</td><td class="">공동 2위</td><td class="">9.33</td><td class="">7위</td></tr><tr class=""><td class="nm">Barbadori</td><td class="">2</td><td class="">공동 10위</td><td class="">8.50</td><td class="">8위</td></tr><tr class=""><td class="nm">Tornabuoni</td><td class="">3</td><td class="">공동 4위</td><td class="">8.33</td><td class="">9위</td></tr><tr class=""><td class="nm">Castellani</td><td class="">3</td><td class="">공동 4위</td><td class="">5.00</td><td class="">10위</td></tr><tr class=""><td class="nm">Peruzzi</td><td class="">3</td><td class="">공동 4위</td><td class="">2.00</td><td class="">11위</td></tr><tr class=""><td class="nm">Acciaiuoli</td><td class="">1</td><td class="">공동 12위</td><td class="">0.00</td><td class="">12위</td></tr><tr class=""><td class="nm">Pazzi</td><td class="">1</td><td class="">공동 12위</td><td class="">0.00</td><td class="">12위</td></tr><tr class=""><td class="nm">Ginori</td><td class="">1</td><td class="">공동 12위</td><td class="">0.00</td><td class="">12위</td></tr><tr class=""><td class="nm">Lamberteschi</td><td class="">1</td><td class="">공동 12위</td><td class="">0.00</td><td class="">12위</td></tr></table></div>
+</div></div><p class="pg">11 / 21</p></section><section class="slide " data-title="robustness"><h2>robustness</h2><div class="body">
+<ul class="lst sm">
+  <li><b>정의</b>: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mi>i</mi></msub></mrow></math>는 node <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>를 뺀 뒤 가장 큰 connected component에 속하지 못한 node, 즉 떨어져 나간 node의 개수
+    <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mi>i</mi></msub><mo>&#x0003D;</mo><mo stretchy="false">&#x00028;</mo><mi>n</mi><mo>&#x02212;</mo><mn>1</mn><mo stretchy="false">&#x00029;</mo><mo>&#x02212;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007C;</mo><msub><mi>C</mi><mrow><mo>max</mo></mrow></msub><mo stretchy="true" fence="true" form="postfix">&#x0007C;</mo></mrow></mrow></math></div>
+    <ul><li>connected component: 서로 연결된 node들로 이루어진 부분 네트워크</li>
+        <li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007C;</mo><msub><mi>C</mi><mrow><mo>max</mo></mrow></msub><mo stretchy="true" fence="true" form="postfix">&#x0007C;</mo></mrow></mrow></math>: 가장 큰 connected component의 node 수</li></ul></li>
+  <li><b>의미</b>: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mi>i</mi></msub></mrow></math>가 클수록 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>가 빠질 때 네트워크가 많이 끊어지므로, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>는 네트워크를 이어 주는 중요한 node이고 네트워크의 robustness는 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>i</mi></mrow></math>에 크게 달려 있다고 봄</li>
+</ul>
+<div class="pair4 ex">
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk gone" x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk gone" x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk gone" x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk gone" x1="560" y1="190" x2="400" y2="270"/><line class="lk gone" x1="560" y1="190" x2="760" y2="140"/><line class="lk gone" x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd cut" cx="560" cy="40" r="13"/><text class="nl cut" x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd gone" cx="560" cy="190" r="13"/><text class="nl gone" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd cut" cx="760" cy="140" r="13"/><text class="nl cut" x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd cut" cx="930" cy="100" r="13"/><text class="nl cut" x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="13"/><text class="nl " x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="13"/><text class="nl " x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="13"/><text class="nl " x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd " cx="240" cy="275" r="13"/><text class="nl " x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd " cx="150" cy="460" r="13"/><text class="nl " x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="13"/><text class="nl " x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="13"/><text class="nl " x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="13"/><text class="nl " x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="13"/><text class="nl " x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="13"/><text class="nl " x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="13"/><text class="nl " x="811" y="526" text-anchor="start">Lamberteschi</text></svg></figure>
+  <div class="tcol">
+    <p class="tcap">계산 예: Medici를 뺀 뒤의 connected component</p>
+    <p class="note">그림의 주황: 떨어져 나간 가문</p>
+    <table class="lt cmp"><tr><th class="nm"></th><th class="nm">가문</th><th class="">node 수</th></tr><tr class=""><td class="nm">가장 큰 것</td><td class="nm">Albizzi, Barbadori 등</td><td class="">11</td></tr><tr class="gap2"><td class="nm">떨어져 나감</td><td class="nm">Pazzi, Salviati</td><td class="">2</td></tr><tr class="gap2"><td class="nm">떨어져 나감</td><td class="nm">Acciaiuoli</td><td class="">1</td></tr></table>
+    <p class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mrow><mtext>Medici</mtext></mrow></msub><mo>&#x0003D;</mo><mo stretchy="false">&#x00028;</mo><mn>15</mn><mo>&#x02212;</mo><mn>1</mn><mo stretchy="false">&#x00029;</mo><mo>&#x02212;</mo><mn>11</mn><mo>&#x0003D;</mo><mn>3</mn></mrow></math></p>
+  </div>
+</div></div><p class="pg">12 / 21</p></section><section class="slide " data-title="community"><h2>community</h2><div class="body">
+<ul class="lst sm">
+  <li><b>정의</b>: community는 그룹 안쪽의 node끼리는 link가 많고, 다른 그룹의 node와는 link가 적은 node의 그룹</li>
+  <li><b>의미</b>: 같은 community에 든 node들은 서로 밀접하게 연관되어 있다고 봄</li>
+</ul>
+<div class="pair4 ex">
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk g0" x1="560" y1="40" x2="560" y2="190"/><line class="lk g2" x1="720" y1="330" x2="920" y2="390"/><line class="lk g2" x1="720" y1="330" x2="560" y2="500"/><line class="lk btw" x1="720" y1="330" x2="560" y2="190"/><line class="lk g1" x1="330" y1="70" x2="120" y2="110"/><line class="lk btw" x1="330" y1="70" x2="560" y2="190"/><line class="lk btw" x1="150" y1="460" x2="560" y2="500"/><line class="lk g1" x1="150" y1="460" x2="50" y2="300"/><line class="lk g1" x1="150" y1="460" x2="240" y2="275"/><line class="lk g1" x1="120" y1="110" x2="50" y2="300"/><line class="lk g1" x1="120" y1="110" x2="240" y2="275"/><line class="lk g2" x1="560" y1="500" x2="790" y2="520"/><line class="lk btw" x1="560" y1="500" x2="480" y2="385"/><line class="lk g0" x1="560" y1="190" x2="400" y2="270"/><line class="lk g0" x1="560" y1="190" x2="760" y2="140"/><line class="lk g0" x1="560" y1="190" x2="480" y2="385"/><line class="lk g0" x1="930" y1="100" x2="760" y2="140"/><line class="lk g1" x1="50" y1="300" x2="240" y2="275"/><line class="lk btw" x1="400" y1="270" x2="240" y2="275"/><line class="lk g0" x1="400" y1="270" x2="480" y2="385"/><circle class="nd g0" cx="560" cy="40" r="13"/><text class="nl g0" x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd g0" cx="560" cy="190" r="13"/><text class="nl g0" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd g0" cx="760" cy="140" r="13"/><text class="nl g0" x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd g0" cx="930" cy="100" r="13"/><text class="nl g0" x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd g1" cx="330" cy="70" r="13"/><text class="nl g1" x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd g1" cx="120" cy="110" r="13"/><text class="nl g1" x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd g1" cx="50" cy="300" r="13"/><text class="nl g1" x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd g1" cx="240" cy="275" r="13"/><text class="nl g1" x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd g1" cx="150" cy="460" r="13"/><text class="nl g1" x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd g0" cx="400" cy="270" r="13"/><text class="nl g0" x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd g0" cx="480" cy="385" r="13"/><text class="nl g0" x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd g2" cx="720" cy="330" r="13"/><text class="nl g2" x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd g2" cx="920" cy="390" r="13"/><text class="nl g2" x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd g2" cx="560" cy="500" r="13"/><text class="nl g2" x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd g2" cx="790" cy="520" r="13"/><text class="nl g2" x="811" y="526" text-anchor="start">Lamberteschi</text></svg><figcaption>색: 그룹, 검은 굵은 선: 그룹 사이 link</figcaption></figure>
+  <div class="tcol">
+    <p class="tcap">예: greedy modularity algorithm으로 15개 가문을 나눈 그룹 3개</p>
+    <table class="lt cmp wrap"><tr><th class="nm"></th><th class="nm">가문</th><th class="">node 수</th></tr><tr class=""><td class="g0t nm">그룹 1</td><td class="nm">Acciaiuoli, Medici, Pazzi, Ridolfi, Salviati, Tornabuoni</td><td class="">6</td></tr><tr class=""><td class="g1t nm">그룹 2</td><td class="nm">Barbadori, Bischeri, Castellani, Peruzzi, Strozzi</td><td class="">5</td></tr><tr class=""><td class="g2t nm">그룹 3</td><td class="nm">Albizzi, Ginori, Guadagni, Lamberteschi</td><td class="">4</td></tr></table>
+    <table class="lt cmp"><tr><th class="nm">link</th><th class="">수</th></tr><tr class=""><td class="nm">그룹 안쪽</td><td class="">15</td></tr><tr class=""><td class="nm">그룹 사이</td><td class="">5</td></tr><tr class="sum"><td class="nm">전체</td><td class="">20</td></tr></table>
+  </div>
+</div></div><p class="pg">13 / 21</p></section><section class="slide " data-title="modularity"><h2>community: modularity</h2><div class="body">
+<ul class="lst sm">
+  <li><b>정의</b>: modularity <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>는 그룹 안 link의 비율이 무작위 네트워크에서 기대되는 비율보다 얼마나 높은지 나타내는 값
+    <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi><mo>&#x0003D;</mo><msub><mo>&#x02211;</mo><mrow><mi>c</mi></mrow></msub><mrow><mo stretchy="true" fence="true" form="prefix">[</mo><mfrac><mrow><msub><mi>L</mi><mi>c</mi></msub></mrow><mrow><mi>m</mi></mrow></mfrac><mo>&#x02212;</mo><msup><mrow><mo stretchy="true" fence="true" form="prefix">&#x00028;</mo><mfrac><mrow><msub><mi>d</mi><mi>c</mi></msub></mrow><mrow><mn>2</mn><mi>m</mi></mrow></mfrac><mo stretchy="true" fence="true" form="postfix">&#x00029;</mo></mrow><mrow><mn>2</mn></mrow></msup><mo stretchy="true" fence="true" form="postfix">]</mo></mrow></mrow></math></div>
+    <ul><li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mi>m</mi></mrow></math>: 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math> 안 link의 실제 비율, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub></mrow></math>는 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math> 안의 link 수, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>m</mi></mrow></math>은 전체 link 수</li>
+        <li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mo stretchy="false">&#x00028;</mo><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup></mrow></math>: 무작위 네트워크에서 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math> 안 link의 기대 비율, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>d</mi><mi>c</mi></msub></mrow></math>는 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math>에 속한 node의 degree 합</li></ul></li>
+  <li><b>무작위 네트워크</b>: link <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>m</mi></mrow></math>개를 만들 때마다 양쪽 node를 각각 degree에 비례하는 확률 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>k</mi><mi>i</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi></mrow></math>로 뽑아 이은 네트워크
+    <ul><li>예: Medici는 degree 6이므로 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mn>6</mn><mo>&#x0002F;</mo><mn>40</mn><mo>&#x0003D;</mo><mn>0.15</mn></mrow></math>의 확률로 뽑힘</li>
+        <li>한쪽 node가 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math>에서 뽑힐 확률은 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math>에 속한 node의 확률을 더한 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi></mrow></math>, 양쪽 모두 그룹 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math>에서 뽑힐 확률은 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mo stretchy="false">&#x00028;</mo><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup></mrow></math></li></ul></li>
+  <li><b>예</b>: 그룹 1의 실제 비율 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mn>6</mn><mo>&#x0002F;</mo><mn>20</mn><mo>&#x0003D;</mo><mn>0.3</mn></mrow></math>, 기대 비율 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mo stretchy="false">&#x00028;</mo><mn>16</mn><mo>&#x0002F;</mo><mn>40</mn><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup><mo>&#x0003D;</mo><mn>0.16</mn></mrow></math>, 차 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mn>0.14</mn></mrow></math></li>
+  <li><b>의미</b>: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>가 클수록 그룹 안에 link가 무작위 네트워크보다 많이 모이게 나눈 것</li>
+</ul></div><p class="pg">14 / 21</p></section><section class="slide " data-title="modularity 계산 예"><h2>community: modularity 계산 예</h2><div class="body">
+<div class="split s7">
+  <div class="tcol">
+    <p class="tcap">그룹 3개로 나눈 경우의 modularity 계산 절차</p>
+    <ol class="lst sm steps">
+      <li>전체 link 수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>m</mi><mo>&#x0003D;</mo><mn>20</mn></mrow></math>, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mn>2</mn><mi>m</mi><mo>&#x0003D;</mo><mn>40</mn></mrow></math>을 셈</li>
+      <li>그룹마다 안쪽 link 수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub></mrow></math>와 degree 합 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>d</mi><mi>c</mi></msub></mrow></math>를 셈</li>
+      <li>그룹마다 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mi>m</mi><mo>&#x02212;</mo><mo stretchy="false">&#x00028;</mo><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup></mrow></math>를 구함</li>
+      <li>그룹 3개의 값을 더해 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>를 구함</li>
+    </ol>
+    <figure class="mini"><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk g0" x1="560" y1="40" x2="560" y2="190"/><line class="lk g2" x1="720" y1="330" x2="920" y2="390"/><line class="lk g2" x1="720" y1="330" x2="560" y2="500"/><line class="lk btw" x1="720" y1="330" x2="560" y2="190"/><line class="lk g1" x1="330" y1="70" x2="120" y2="110"/><line class="lk btw" x1="330" y1="70" x2="560" y2="190"/><line class="lk btw" x1="150" y1="460" x2="560" y2="500"/><line class="lk g1" x1="150" y1="460" x2="50" y2="300"/><line class="lk g1" x1="150" y1="460" x2="240" y2="275"/><line class="lk g1" x1="120" y1="110" x2="50" y2="300"/><line class="lk g1" x1="120" y1="110" x2="240" y2="275"/><line class="lk g2" x1="560" y1="500" x2="790" y2="520"/><line class="lk btw" x1="560" y1="500" x2="480" y2="385"/><line class="lk g0" x1="560" y1="190" x2="400" y2="270"/><line class="lk g0" x1="560" y1="190" x2="760" y2="140"/><line class="lk g0" x1="560" y1="190" x2="480" y2="385"/><line class="lk g0" x1="930" y1="100" x2="760" y2="140"/><line class="lk g1" x1="50" y1="300" x2="240" y2="275"/><line class="lk btw" x1="400" y1="270" x2="240" y2="275"/><line class="lk g0" x1="400" y1="270" x2="480" y2="385"/><circle class="nd g0" cx="560" cy="40" r="13"/><text class="nl g0" x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd g0" cx="560" cy="190" r="13"/><text class="nl g0" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd g0" cx="760" cy="140" r="13"/><text class="nl g0" x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd g0" cx="930" cy="100" r="13"/><text class="nl g0" x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd g1" cx="330" cy="70" r="13"/><text class="nl g1" x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd g1" cx="120" cy="110" r="13"/><text class="nl g1" x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd g1" cx="50" cy="300" r="13"/><text class="nl g1" x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd g1" cx="240" cy="275" r="13"/><text class="nl g1" x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd g1" cx="150" cy="460" r="13"/><text class="nl g1" x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd g0" cx="400" cy="270" r="13"/><text class="nl g0" x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd g0" cx="480" cy="385" r="13"/><text class="nl g0" x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd g2" cx="720" cy="330" r="13"/><text class="nl g2" x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd g2" cx="920" cy="390" r="13"/><text class="nl g2" x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd g2" cx="560" cy="500" r="13"/><text class="nl g2" x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd g2" cx="790" cy="520" r="13"/><text class="nl g2" x="811" y="526" text-anchor="start">Lamberteschi</text></svg></figure>
+  </div>
+  <div class="tcol">
+    <table class="lt cmp"><tr><th class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>c</mi></mrow></math></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub></mrow></math></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>d</mi><mi>c</mi></msub></mrow></math></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mi>m</mi></mrow></math></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mo stretchy="false">&#x00028;</mo><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup></mrow></math></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mi>m</mi><mo>&#x02212;</mo><mo stretchy="false">&#x00028;</mo><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup></mrow></math></th></tr><tr class=""><td class="nm">그룹 1</td><td class="">6</td><td class="">16</td><td class="">0.3</td><td class="">0.16</td><td class="">0.14</td></tr><tr class=""><td class="nm">그룹 2</td><td class="">6</td><td class="">15</td><td class="">0.3</td><td class="">0.140625</td><td class="">0.159375</td></tr><tr class=""><td class="nm">그룹 3</td><td class="">3</td><td class="">9</td><td class="">0.15</td><td class="">0.050625</td><td class="">0.099375</td></tr><tr class="sum"><td class="nm">Q</td><td class=""></td><td class=""></td><td class=""></td><td class=""></td><td class="">0.39875</td></tr></table>
+    <p class="tcap">같은 네트워크를 다르게 나눈 경우의 Q</p>
+    <table class="lt cmp"><tr><th class="nm">나눔</th><th class="">Q</th></tr><tr class=""><td class="nm">15개 가문을 모두 한 그룹으로</td><td class="">0</td></tr><tr class=""><td class="nm">가문마다 따로 한 그룹씩</td><td class="">-0.08375</td></tr><tr class=""><td class="nm">그룹 3개</td><td class="">0.39875</td></tr></table>
+  </div>
+</div></div><p class="pg">15 / 21</p></section><section class="slide " data-title="greedy modularity algorithm"><h2>community: greedy modularity algorithm</h2><div class="body">
+<ul class="lst sm">
+  <li><b>정의</b>: greedy modularity algorithm은 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>가 가장 크게 늘어나는 두 그룹을 하나씩 합쳐 가며 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>가 큰 나눔을 찾는 방법
+    <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi><mo>&#x0003D;</mo><mfrac><mrow><msub><mi>L</mi><mrow><mi>A</mi><mi>B</mi></mrow></msub></mrow><mrow><mi>m</mi></mrow></mfrac><mo>&#x02212;</mo><mn>2</mn><mo>&#x000B7;</mo><mfrac><mrow><msub><mi>d</mi><mi>A</mi></msub><mspace width="0.167em" /><msub><mi>d</mi><mi>B</mi></msub></mrow><mrow><mo stretchy="false">&#x00028;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup></mrow></mfrac></mrow></math></div>
+    <ul><li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi></mrow></math>: 두 그룹 A, B를 합칠 때 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>가 늘어나는 양, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>L</mi><mrow><mi>A</mi><mi>B</mi></mrow></msub></mrow></math>: A와 B 사이 link 수, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>d</mi><mi>A</mi></msub><mo>&#x0002C;</mo><msub><mi>d</mi><mi>B</mi></msub></mrow></math>: 두 그룹 각각에 속한 node마다 이어진 link 수(degree)를 더한 값</li></ul></li>
+</ul>
+<div class="split s7">
+  <div class="tcol">
+    <p class="tcap">절차</p>
+    <ol class="lst sm steps">
+      <li>node마다 그룹 하나로 시작함: 그룹 15개, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi><mo>&#x0003D;</mo><mo>&#x02212;</mo><mn>0.08375</mn></mrow></math></li>
+      <li>link로 이어진 두 그룹의 모든 쌍에 대해 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi></mrow></math>를 구함</li>
+      <li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi></mrow></math>가 가장 큰 두 그룹을 하나로 합침</li>
+      <li>가장 큰 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi></mrow></math>가 0 이하가 될 때까지 2~3을 되풀이함</li>
+    </ol>
+  </div>
+  <div class="tcol">
+    <p class="tcap">계산 예: 첫 합치기, Pazzi와 Salviati</p>
+    <p class="note">Pazzi의 degree 1, Salviati의 degree 2, 둘 사이 link 1개</p>
+    <p class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi><mo>&#x0003D;</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>20</mn></mrow></mfrac><mo>&#x02212;</mo><mn>2</mn><mo>&#x000B7;</mo><mfrac><mrow><mn>1</mn><mo>&#x000B7;</mo><mn>2</mn></mrow><mrow><mn>1600</mn></mrow></mfrac><mo>&#x0003D;</mo><mn>0.0475</mn></mrow></math></p>
+    <p class="note">link로 이어진 다른 어느 두 그룹보다 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>&#x00394;</mi><mi>Q</mi></mrow></math>가 커서 가장 먼저 합쳐짐</p>
+  </div>
+</div>
+<p class="foot">Clauset·Newman·Moore(2004)의 방법</p></div><p class="pg">16 / 21</p></section><section class="slide " data-title="greedy modularity algorithm 진행 예"><h2>community: greedy modularity algorithm 진행 예</h2><div class="body">
+<div class="split s2">
+  <figure class="chart"><svg viewBox="0 0 420 340" role="img"><line class="grid" x1="60" x2="404" y1="294.0" y2="294.0"/><text class="ax" x="52" y="299.0" text-anchor="end">-0.1</text><line class="zero" x1="60" x2="404" y1="240.4" y2="240.4"/><text class="ax" x="52" y="245.4" text-anchor="end">0</text><line class="grid" x1="60" x2="404" y1="186.8" y2="186.8"/><text class="ax" x="52" y="191.8" text-anchor="end">0.1</text><line class="grid" x1="60" x2="404" y1="133.2" y2="133.2"/><text class="ax" x="52" y="138.2" text-anchor="end">0.2</text><line class="grid" x1="60" x2="404" y1="79.6" y2="79.6"/><text class="ax" x="52" y="84.6" text-anchor="end">0.3</text><line class="grid" x1="60" x2="404" y1="26.0" y2="26.0"/><text class="ax" x="52" y="31.0" text-anchor="end">0.4</text><text class="ax" x="60.0" y="316" text-anchor="middle">0</text><text class="ax" x="117.3" y="316" text-anchor="middle">2</text><text class="ax" x="174.7" y="316" text-anchor="middle">4</text><text class="ax" x="232.0" y="316" text-anchor="middle">6</text><text class="ax" x="289.3" y="316" text-anchor="middle">8</text><text class="ax" x="346.7" y="316" text-anchor="middle">10</text><text class="ax" x="404.0" y="316" text-anchor="middle">12</text><text class="ax" x="232.0" y="336" text-anchor="middle">합친 횟수</text><text class="ax" x="52" y="16" text-anchor="start">Q</text><polyline class="rl q" points="60.0,285.3 88.7,259.8 117.3,235.0 146.0,210.9 174.7,188.1 203.3,165.4 232.0,144.6 260.7,107.1 289.3,86.3 318.0,60.8 346.7,40.7 375.3,27.3 404.0,26.7"/><circle class="rp q" cx="60.0" cy="285.3" r="4.5"/><circle class="rp q" cx="88.7" cy="259.8" r="4.5"/><circle class="rp q" cx="117.3" cy="235.0" r="4.5"/><circle class="rp q" cx="146.0" cy="210.9" r="4.5"/><circle class="rp q" cx="174.7" cy="188.1" r="4.5"/><circle class="rp q" cx="203.3" cy="165.4" r="4.5"/><circle class="rp q" cx="232.0" cy="144.6" r="4.5"/><circle class="rp q" cx="260.7" cy="107.1" r="4.5"/><circle class="rp q" cx="289.3" cy="86.3" r="4.5"/><circle class="rp q" cx="318.0" cy="60.8" r="4.5"/><circle class="rp q" cx="346.7" cy="40.7" r="4.5"/><circle class="rp q" cx="375.3" cy="27.3" r="4.5"/><circle class="rp q" cx="404.0" cy="26.7" r="4.5"/></svg></figure>
+  <div class="tcol">
+    <p class="tcap">그룹 15개에서 시작해 12번 합친 뒤, 어느 두 그룹을 합쳐도 ΔQ가 0 이하라 멈춤: 그룹 3개, Q = 0.39875</p>
+    <table class="lt cmp tiny"><tr><th class="">회</th><th class="nm">그룹 A</th><th class="nm">그룹 B</th><th class="">ΔQ</th><th class="">Q</th></tr><tr class=""><td class="">1</td><td class="nm">Pazzi</td><td class="nm">Salviati</td><td class="">0.04750</td><td class="">-0.03625</td></tr><tr class=""><td class="">2</td><td class="nm">Albizzi</td><td class="nm">Ginori</td><td class="">0.04625</td><td class="">0.01000</td></tr><tr class=""><td class="">3</td><td class="nm">Guadagni</td><td class="nm">Lamberteschi</td><td class="">0.04500</td><td class="">0.05500</td></tr><tr class=""><td class="">4</td><td class="nm">Acciaiuoli</td><td class="nm">Medici</td><td class="">0.04250</td><td class="">0.09750</td></tr><tr class=""><td class="">5</td><td class="nm">Barbadori</td><td class="nm">Castellani</td><td class="">0.04250</td><td class="">0.14000</td></tr><tr class=""><td class="">6</td><td class="nm">Bischeri</td><td class="nm">Peruzzi</td><td class="">0.03875</td><td class="">0.17875</td></tr><tr class=""><td class="">7</td><td class="nm">Strozzi</td><td class="nm">Peruzzi·Bischeri</td><td class="">0.07000</td><td class="">0.24875</td></tr><tr class=""><td class="">8</td><td class="nm">Ridolfi</td><td class="nm">Tornabuoni</td><td class="">0.03875</td><td class="">0.28750</td></tr><tr class=""><td class="">9</td><td class="nm">Medici·Acciaiuoli</td><td class="nm">Ridolfi·Tornabuoni</td><td class="">0.04750</td><td class="">0.33500</td></tr><tr class=""><td class="">10</td><td class="nm">Castellani·Barbadori</td><td class="nm">Strozzi·Bischeri·Peruzzi</td><td class="">0.03750</td><td class="">0.37250</td></tr><tr class=""><td class="">11</td><td class="nm">Albizzi·Ginori</td><td class="nm">Guadagni·Lamberteschi</td><td class="">0.02500</td><td class="">0.39750</td></tr><tr class=""><td class="">12</td><td class="nm">Salviati·Pazzi</td><td class="nm">Medici·Ridolfi·Tornabuoni·Acciaiuoli</td><td class="">0.00125</td><td class="">0.39875</td></tr></table>
+  </div>
+</div></div><p class="pg">17 / 21</p></section><section class="slide " data-title="centrality 순위와 제거 효과의 차이"><h2>해석 시 주의: centrality 순위와 제거 효과의 차이</h2><div class="body">
+<ul class="lst sm">
+  <li><b>주의</b>: betweenness centrality는 최단 경로만 세므로, betweenness centrality가 높은 node를 빼도 더 긴 경로가 남아 있으면 네트워크가 끊어지지 않음</li>
+  <li><b>예</b>: Guadagni는 betweenness centrality 2위이지만, 빼도 떨어져 나가는 가문은 Lamberteschi 하나뿐임</li>
+  <li><b>대응</b>: 끊어지는 정도는 centrality 순위로 짐작하지 않고, node를 직접 빼서 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mi>i</mi></msub></mrow></math>로 계산함</li>
+</ul>
+<div class="pair4">
+  <div class="tcol">
+    <p class="tcap">betweenness centrality 상위 5개 가문</p>
+    <table class="lt cmp"><tr><th class="nm">가문</th><th class="">betweenness 순위</th><th class="">betweenness</th><th class="">r<sub>i</sub></th></tr><tr class=""><td class="nm">Medici</td><td class="">1위</td><td class="">47.50</td><td class="">3</td></tr><tr class=""><td class="nm">Guadagni</td><td class="">2위</td><td class="">23.17</td><td class="">1</td></tr><tr class=""><td class="nm">Albizzi</td><td class="">3위</td><td class="">19.33</td><td class="">1</td></tr><tr class=""><td class="nm">Salviati</td><td class="">4위</td><td class="">13.00</td><td class="">1</td></tr><tr class=""><td class="nm">Ridolfi</td><td class="">5위</td><td class="">10.33</td><td class="">0</td></tr></table>
+  </div>
+</div></div><p class="pg">18 / 21</p></section><section class="slide " data-title="community 경계의 node"><h2>해석 시 주의: community 경계의 node</h2><div class="body">
+<ul class="lst sm">
+  <li><b>주의</b>: 그룹 경계에 있는 node는 어느 그룹에 넣어도 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math>가 거의 같아서, community 결과가 하나로 정해지지 않을 수 있음</li>
+  <li><b>예</b>: Pazzi와 Salviati를 따로 둔 그룹 4개와 그룹 1에 넣은 그룹 3개의 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi></mrow></math> 차이는 0.00125</li>
+  <li><b>대응</b>: 경계 node가 어느 그룹에 속하는지는 확정된 결과로 보지 않음</li>
+</ul>
+<div class="split s2 even">
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk g0" x1="560" y1="40" x2="560" y2="190"/><line class="lk g2" x1="720" y1="330" x2="920" y2="390"/><line class="lk g2" x1="720" y1="330" x2="560" y2="500"/><line class="lk btw" x1="720" y1="330" x2="560" y2="190"/><line class="lk g1" x1="330" y1="70" x2="120" y2="110"/><line class="lk btw" x1="330" y1="70" x2="560" y2="190"/><line class="lk btw" x1="150" y1="460" x2="560" y2="500"/><line class="lk g1" x1="150" y1="460" x2="50" y2="300"/><line class="lk g1" x1="150" y1="460" x2="240" y2="275"/><line class="lk g1" x1="120" y1="110" x2="50" y2="300"/><line class="lk g1" x1="120" y1="110" x2="240" y2="275"/><line class="lk g2" x1="560" y1="500" x2="790" y2="520"/><line class="lk btw" x1="560" y1="500" x2="480" y2="385"/><line class="lk g0" x1="560" y1="190" x2="400" y2="270"/><line class="lk btw" x1="560" y1="190" x2="760" y2="140"/><line class="lk g0" x1="560" y1="190" x2="480" y2="385"/><line class="lk g3" x1="930" y1="100" x2="760" y2="140"/><line class="lk g1" x1="50" y1="300" x2="240" y2="275"/><line class="lk btw" x1="400" y1="270" x2="240" y2="275"/><line class="lk g0" x1="400" y1="270" x2="480" y2="385"/><circle class="nd g0" cx="560" cy="40" r="13"/><text class="nl g0" x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd g0" cx="560" cy="190" r="13"/><text class="nl g0" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd g3" cx="760" cy="140" r="13"/><text class="nl g3" x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd g3" cx="930" cy="100" r="13"/><text class="nl g3" x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd g1" cx="330" cy="70" r="13"/><text class="nl g1" x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd g1" cx="120" cy="110" r="13"/><text class="nl g1" x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd g1" cx="50" cy="300" r="13"/><text class="nl g1" x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd g1" cx="240" cy="275" r="13"/><text class="nl g1" x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd g1" cx="150" cy="460" r="13"/><text class="nl g1" x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd g0" cx="400" cy="270" r="13"/><text class="nl g0" x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd g0" cx="480" cy="385" r="13"/><text class="nl g0" x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd g2" cx="720" cy="330" r="13"/><text class="nl g2" x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd g2" cx="920" cy="390" r="13"/><text class="nl g2" x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd g2" cx="560" cy="500" r="13"/><text class="nl g2" x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd g2" cx="790" cy="520" r="13"/><text class="nl g2" x="811" y="526" text-anchor="start">Lamberteschi</text></svg><figcaption>그룹 4개: Pazzi·Salviati를 따로 둠, Q = 0.39750</figcaption></figure>
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk g0" x1="560" y1="40" x2="560" y2="190"/><line class="lk g2" x1="720" y1="330" x2="920" y2="390"/><line class="lk g2" x1="720" y1="330" x2="560" y2="500"/><line class="lk btw" x1="720" y1="330" x2="560" y2="190"/><line class="lk g1" x1="330" y1="70" x2="120" y2="110"/><line class="lk btw" x1="330" y1="70" x2="560" y2="190"/><line class="lk btw" x1="150" y1="460" x2="560" y2="500"/><line class="lk g1" x1="150" y1="460" x2="50" y2="300"/><line class="lk g1" x1="150" y1="460" x2="240" y2="275"/><line class="lk g1" x1="120" y1="110" x2="50" y2="300"/><line class="lk g1" x1="120" y1="110" x2="240" y2="275"/><line class="lk g2" x1="560" y1="500" x2="790" y2="520"/><line class="lk btw" x1="560" y1="500" x2="480" y2="385"/><line class="lk g0" x1="560" y1="190" x2="400" y2="270"/><line class="lk g0" x1="560" y1="190" x2="760" y2="140"/><line class="lk g0" x1="560" y1="190" x2="480" y2="385"/><line class="lk g0" x1="930" y1="100" x2="760" y2="140"/><line class="lk g1" x1="50" y1="300" x2="240" y2="275"/><line class="lk btw" x1="400" y1="270" x2="240" y2="275"/><line class="lk g0" x1="400" y1="270" x2="480" y2="385"/><circle class="nd g0" cx="560" cy="40" r="13"/><text class="nl g0" x="581" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd g0" cx="560" cy="190" r="13"/><text class="nl g0" x="573.8" y="176.2" text-anchor="start">Medici</text><circle class="nd g0" cx="760" cy="140" r="13"/><text class="nl g0" x="760" y="118" text-anchor="middle">Salviati</text><circle class="nd g0" cx="930" cy="100" r="13"/><text class="nl g0" x="930" y="78" text-anchor="middle">Pazzi</text><circle class="nd g1" cx="330" cy="70" r="13"/><text class="nl g1" x="330" y="48" text-anchor="middle">Barbadori</text><circle class="nd g1" cx="120" cy="110" r="13"/><text class="nl g1" x="120" y="88" text-anchor="middle">Castellani</text><circle class="nd g1" cx="50" cy="300" r="13"/><text class="nl g1" x="29" y="306" text-anchor="end">Peruzzi</text><circle class="nd g1" cx="240" cy="275" r="13"/><text class="nl g1" x="219" y="281" text-anchor="end">Strozzi</text><circle class="nd g1" cx="150" cy="460" r="13"/><text class="nl g1" x="150" y="495" text-anchor="middle">Bischeri</text><circle class="nd g0" cx="400" cy="270" r="13"/><text class="nl g0" x="400" y="248" text-anchor="middle">Ridolfi</text><circle class="nd g0" cx="480" cy="385" r="13"/><text class="nl g0" x="501" y="391" text-anchor="start">Tornabuoni</text><circle class="nd g2" cx="720" cy="330" r="13"/><text class="nl g2" x="741" y="336" text-anchor="start">Albizzi</text><circle class="nd g2" cx="920" cy="390" r="13"/><text class="nl g2" x="920" y="425" text-anchor="middle">Ginori</text><circle class="nd g2" cx="560" cy="500" r="13"/><text class="nl g2" x="560" y="535" text-anchor="middle">Guadagni</text><circle class="nd g2" cx="790" cy="520" r="13"/><text class="nl g2" x="811" y="526" text-anchor="start">Lamberteschi</text></svg><figcaption>그룹 3개: Pazzi·Salviati를 그룹 1에 넣음, Q = 0.39875</figcaption></figure>
+</div></div><p class="pg">19 / 21</p></section><section class="slide " data-title="Medici와 Strozzi"><h2>정리: Medici와 Strozzi</h2><div class="body">
+<ul class="lst sm">
+  <li>1427년 재산과 시의회 의석은 Strozzi가 더 많았지만, 1434년 이후 피렌체를 이끈 가문은 Medici</li>
+  <li>혼인 네트워크에서 Medici는 betweenness centrality 1위이고, 빼면 3개 가문이 떨어져 나감</li>
+  <li>Padgett·Ansell(1993)은 서로 이어지지 않은 가문들을 Medici가 잇고 있었던 점으로 Medici의 집권을 설명함</li>
+</ul>
+<div class="pair4 ex">
+  <figure><svg class="big" viewBox="-130 -30 1260 620" role="img"><line class="lk " x1="560" y1="40" x2="560" y2="190"/><line class="lk " x1="720" y1="330" x2="920" y2="390"/><line class="lk " x1="720" y1="330" x2="560" y2="500"/><line class="lk " x1="720" y1="330" x2="560" y2="190"/><line class="lk " x1="330" y1="70" x2="120" y2="110"/><line class="lk " x1="330" y1="70" x2="560" y2="190"/><line class="lk " x1="150" y1="460" x2="560" y2="500"/><line class="lk " x1="150" y1="460" x2="50" y2="300"/><line class="lk " x1="150" y1="460" x2="240" y2="275"/><line class="lk " x1="120" y1="110" x2="50" y2="300"/><line class="lk " x1="120" y1="110" x2="240" y2="275"/><line class="lk " x1="560" y1="500" x2="790" y2="520"/><line class="lk " x1="560" y1="500" x2="480" y2="385"/><line class="lk " x1="560" y1="190" x2="400" y2="270"/><line class="lk " x1="560" y1="190" x2="760" y2="140"/><line class="lk " x1="560" y1="190" x2="480" y2="385"/><line class="lk " x1="930" y1="100" x2="760" y2="140"/><line class="lk " x1="50" y1="300" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="240" y2="275"/><line class="lk " x1="400" y1="270" x2="480" y2="385"/><circle class="nd " cx="560" cy="40" r="7.0"/><text class="nl " x="575.0" y="46" text-anchor="start">Acciaiuoli</text><circle class="nd hl" cx="560" cy="190" r="20.57142857142857"/><text class="nl hl" x="578.3428571428572" y="171.65714285714284" text-anchor="start">Medici</text><circle class="nd " cx="760" cy="140" r="10.714285714285715"/><text class="nl " x="760" y="120.28571428571428" text-anchor="middle">Salviati</text><circle class="nd " cx="930" cy="100" r="7.0"/><text class="nl " x="930" y="84.0" text-anchor="middle">Pazzi</text><circle class="nd " cx="330" cy="70" r="9.428571428571429"/><text class="nl " x="330" y="51.57142857142857" text-anchor="middle">Barbadori</text><circle class="nd " cx="120" cy="110" r="8.428571428571429"/><text class="nl " x="120" y="92.57142857142857" text-anchor="middle">Castellani</text><circle class="nd " cx="50" cy="300" r="7.571428571428571"/><text class="nl " x="34.42857142857143" y="306" text-anchor="end">Peruzzi</text><circle class="nd hl" cx="240" cy="275" r="9.666666666666668"/><text class="nl hl" x="222.33333333333334" y="281" text-anchor="end">Strozzi</text><circle class="nd " cx="150" cy="460" r="9.714285714285715"/><text class="nl " x="150" y="491.7142857142857" text-anchor="middle">Bischeri</text><circle class="nd " cx="400" cy="270" r="9.952380952380953"/><text class="nl " x="400" y="251.04761904761904" text-anchor="middle">Ridolfi</text><circle class="nd " cx="480" cy="385" r="9.38095238095238"/><text class="nl " x="497.3809523809524" y="391" text-anchor="start">Tornabuoni</text><circle class="nd " cx="720" cy="330" r="12.523809523809524"/><text class="nl " x="740.5238095238095" y="336" text-anchor="start">Albizzi</text><circle class="nd " cx="920" cy="390" r="7.0"/><text class="nl " x="920" y="419.0" text-anchor="middle">Ginori</text><circle class="nd " cx="560" cy="500" r="13.61904761904762"/><text class="nl " x="560" y="535.6190476190476" text-anchor="middle">Guadagni</text><circle class="nd " cx="790" cy="520" r="7.0"/><text class="nl " x="805.0" y="526" text-anchor="start">Lamberteschi</text></svg><figcaption>점의 크기: betweenness centrality</figcaption></figure>
+  <div class="tcol"><table class="lt cmp"><tr><th class="nm"></th><th class="">Medici</th><th class="">Strozzi</th></tr><tr class=""><td class="nm">재산(1427년, 천 리라)</td><td class="">103 (2위)</td><td class="">146 (1위)</td></tr><tr class=""><td class="nm">시의회 의석(1282~1344년)</td><td class="">53 (공동 3위)</td><td class="">74 (1위)</td></tr><tr class=""><td class="nm">degree centrality</td><td class="">6 (1위)</td><td class="">4 (공동 2위)</td></tr><tr class=""><td class="nm">betweenness centrality</td><td class="">47.50 (1위)</td><td class="">9.33 (7위)</td></tr><tr class=""><td class="nm">떨어져 나간 node의 개수 r<sub>i</sub></td><td class="">3</td><td class="">0</td></tr></table></div>
+</div></div><p class="pg">20 / 21</p></section><section class="slide " data-title="정리"><h2>정리</h2><div class="body"><table class="lt summary"><tr><th class="nm">개념</th><th class="nm">정의·식</th><th class="nm">예시</th></tr><tr class=""><td class="nm">node, link</td><td class="nm">node: 네트워크를 이루는 대상, link: 두 node를 잇는 관계</td><td class="nm">node 15개, link 20개</td></tr><tr class=""><td class="nm">거리</td><td class="nm">두 node 사이 최단 경로의 길이</td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>d</mi><mo stretchy="false">&#x00028;</mo><mtext>Medici</mtext><mo>&#x0002C;</mo><mtext>Strozzi</mtext><mo stretchy="false">&#x00029;</mo><mo>&#x0003D;</mo><mn>2</mn></mrow></math></td></tr><tr class=""><td class="nm">degree centrality</td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>k</mi><mi>i</mi></msub><mo>&#x0003D;</mo><msub><mo>&#x02211;</mo><mi>j</mi></msub><msub><mi>a</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow></math></td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>k</mi><mrow><mtext>Medici</mtext></mrow></msub><mo>&#x0003D;</mo><mn>6</mn></mrow></math></td></tr><tr class=""><td class="nm">betweenness centrality</td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>b</mi><mi>i</mi></msub><mo>&#x0003D;</mo><mo>&#x02211;</mo><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub><mo stretchy="false">&#x00028;</mo><mi>i</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002F;</mo><msub><mi>&#x003C3;</mi><mrow><mi>s</mi><mi>t</mi></mrow></msub></mrow></math></td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>b</mi><mrow><mtext>Salviati</mtext></mrow></msub><mo>&#x0003D;</mo><mn>13</mn></mrow></math></td></tr><tr class=""><td class="nm">robustness</td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mi>i</mi></msub><mo>&#x0003D;</mo><mo stretchy="false">&#x00028;</mo><mi>n</mi><mo>&#x02212;</mo><mn>1</mn><mo stretchy="false">&#x00029;</mo><mo>&#x02212;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007C;</mo><msub><mi>C</mi><mrow><mo>max</mo></mrow></msub><mo stretchy="true" fence="true" form="postfix">&#x0007C;</mo></mrow></mrow></math></td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>r</mi><mrow><mtext>Medici</mtext></mrow></msub><mo>&#x0003D;</mo><mn>3</mn></mrow></math></td></tr><tr class=""><td class="nm">modularity</td><td class="nm"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi><mo>&#x0003D;</mo><msub><mo>&#x02211;</mo><mi>c</mi></msub><mo stretchy="false">[</mo><msub><mi>L</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mi>m</mi><mo>&#x02212;</mo><mo stretchy="false">&#x00028;</mo><msub><mi>d</mi><mi>c</mi></msub><mo>&#x0002F;</mo><mn>2</mn><mi>m</mi><msup><mo stretchy="false">&#x00029;</mo><mn>2</mn></msup><mo stretchy="false">]</mo></mrow></math></td><td class="nm">그룹 3개, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>Q</mi><mo>&#x0003D;</mo><mn>0.39875</mn></mrow></math></td></tr><tr class=""><td class="nm">greedy modularity algorithm</td><td class="nm">ΔQ가 가장 큰 두 그룹을 차례로 합침</td><td class="nm">12번 합쳐 그룹 3개</td></tr></table></div><p class="pg">21 / 21</p></section></main></div>
+<nav class="navbar"><button id="prev" aria-label="이전 장">‹</button><span id="count"></span><button id="next" aria-label="다음 장">›</button>
+<button id="tocbtn">목차 T</button><button id="fsbtn">전체 화면 F</button></nav>
+<aside class="toc" id="toc" hidden><ol><li><a href="#1">1. 네트워크 분석</a></li><li><a href="#2">2. 네트워크 분석이란</a></li><li><a href="#3">3. 네트워크 데이터의 특징과 표현</a></li><li><a href="#4">4. 네트워크 데이터 예시: 피렌체 가문의 혼인 관계</a></li><li><a href="#5">5. 경로와 거리</a></li><li><a href="#6">6. 네트워크 분석의 방법과 지표</a></li><li><a href="#7">7. Medici와 Strozzi</a></li><li><a href="#8">8. degree centrality</a></li><li><a href="#9">9. betweenness centrality</a></li><li><a href="#10">10. betweenness centrality 계산 예</a></li><li><a href="#11">11. degree centrality와 betweenness centrality의 순위</a></li><li><a href="#12">12. robustness</a></li><li><a href="#13">13. community</a></li><li><a href="#14">14. modularity</a></li><li><a href="#15">15. modularity 계산 예</a></li><li><a href="#16">16. greedy modularity algorithm</a></li><li><a href="#17">17. greedy modularity algorithm 진행 예</a></li><li><a href="#18">18. centrality 순위와 제거 효과의 차이</a></li><li><a href="#19">19. community 경계의 node</a></li><li><a href="#20">20. Medici와 Strozzi</a></li><li><a href="#21">21. 정리</a></li></ol></aside>
+<script>(function () {
+  var stage = document.getElementById("stage");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var count = document.getElementById("count");
+  var toc = document.getElementById("toc");
+  var links = Array.prototype.slice.call(toc.querySelectorAll("a"));
+  var cur = 0;
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight - 44;
+    var s = Math.min(w / 1280, h / 720);
+    stage.style.transform = "scale(" + s + ")";
+  }
+
+  function show(i, push) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (el, k) { el.classList.toggle("cur", k === cur); });
+    links.forEach(function (a, k) { a.classList.toggle("on", k === cur); });
+    count.textContent = (cur + 1) + " / " + slides.length;
+    if (push !== false && location.hash !== "#" + (cur + 1)) history.replaceState(null, "", "#" + (cur + 1));
+  }
+
+  function fromHash() {
+    var n = parseInt((location.hash || "#1").slice(1), 10);
+    show(isNaN(n) ? 0 : n - 1, false);
+  }
+
+  function toggleToc() { toc.hidden = !toc.hidden; }
+  function fullscreen() {
+    if (document.fullscreenElement) { document.exitFullscreen().catch(function () {}); }
+    else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(function () {}); }
+  }
+
+  document.getElementById("prev").addEventListener("click", function () { show(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { show(cur + 1); });
+  document.getElementById("tocbtn").addEventListener("click", toggleToc);
+  document.getElementById("fsbtn").addEventListener("click", fullscreen);
+  links.forEach(function (a, k) { a.addEventListener("click", function (e) { e.preventDefault(); show(k); toc.hidden = true; }); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === "PageDown" || k === " " || k === "Enter") { e.preventDefault(); show(cur + 1); }
+    else if (k === "ArrowLeft" || k === "PageUp" || k === "Backspace") { e.preventDefault(); show(cur - 1); }
+    else if (k === "Home") { show(0); }
+    else if (k === "End") { show(slides.length - 1); }
+    else if (k === "t" || k === "T") { toggleToc(); }
+    else if (k === "f" || k === "F") { fullscreen(); }
+    else if (k === "Escape") { toc.hidden = true; }
+  });
+
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", fromHash);
+  fit();
+  fromHash();
+})();
+</script>
+<script>
+/* 이론 문서 편집 모드. 주소 끝에 ?edit 를 붙여 열면 화면의 글자를 눌러 바로 고칠 수 있다.
+   고친 칸은 노랗게 표시되고 같은 브라우저에 저장된다. "고친 내용 복사"로 전/후 목록을 복사해 Claude에게 붙여 넣으면
+   Claude가 원본(생성기 build.py 또는 이론.html)에 옮긴다. make_all.py가 build/theory/*.html에 넣는다. */
+(function () {
+  if (!/[?&]edit(=|&|$)/.test(location.search)) return;
+  var KEY = "theory-edit:" + location.pathname;
+  var SEL = "h1,h2,h3,h4,p,li,td,th,figcaption,dt,dd,blockquote";
+  var SKIP = "svg, math, .katex, script, style, nav, .navbar, .toc, #toc, .pg, .ed-bar, .ed-panel";
+
+  function plain(el) {
+    var c = el.cloneNode(true);
+    c.querySelectorAll(".katex").forEach(function (k) {
+      var a = k.querySelector('annotation[encoding="application/x-tex"]');
+      k.replaceWith(a ? "\\(" + a.textContent + "\\)" : "[수식]");
+    });
+    c.querySelectorAll("math").forEach(function (m) { m.replaceWith("[수식]"); });
+    c.querySelectorAll("svg").forEach(function (s) { s.replaceWith("[그림]"); });
+    return c.textContent.replace(/\s+/g, " ").trim();
+  }
+  function hasText(el) {
+    for (var n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && n.data.trim()) return true;
+    return false;
+  }
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } }
+  function save(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+
+  function start() {
+    var units = [].slice.call(document.querySelectorAll(".slide"));
+    var slides = units.length > 0;
+    if (!slides) units = [document.body];
+    var heads = [].slice.call(document.querySelectorAll("h1, h2, h3"));
+    var items = [], seen = {};
+    units.forEach(function (u, ui) {
+      var h = u.querySelector("h1, h2");
+      var title = slides ? (ui + 1) + "장" + (h ? " " + plain(h) : "") : "";
+      [].slice.call(u.querySelectorAll("*")).forEach(function (el) {
+        if (el.closest(SKIP)) return;
+        if (!el.matches(SEL) && !hasText(el)) return;
+        for (var p = el.parentElement; p && p !== u; p = p.parentElement)
+          if (p.isContentEditable || p.hasAttribute("data-ed")) return;
+        var orig = plain(el);
+        if (!orig) return;
+        var k = orig + "#" + (seen[orig] = (seen[orig] || 0) + 1);
+        var label = title;
+        if (!slides) {
+          var prev = heads.filter(function (x) { return x === el || (x.compareDocumentPosition(el) & 4); }).pop();
+          label = prev ? plain(prev) : "본문";
+        }
+        el.setAttribute("data-ed", "");
+        el.setAttribute("contenteditable", "true");
+        el.setAttribute("spellcheck", "false");
+        el.querySelectorAll("svg, math, .katex").forEach(function (m) { m.setAttribute("contenteditable", "false"); });
+        items.push({ el: el, key: k, orig: orig, label: label });
+      });
+    });
+
+    var store = load(), kept = {};
+    items.forEach(function (it) {
+      var s = store[it.key];
+      if (s && s.orig === it.orig) { it.el.innerHTML = s.html; kept[it.key] = s; }
+    });
+    save(kept);
+
+    var bar = document.createElement("div");
+    bar.className = "ed-bar";
+    bar.innerHTML = '<span>편집 모드 · 글자를 눌러 고치세요 · 고친 곳 <b class="ed-n">0</b></span>' +
+      '<button class="ed-copy">고친 내용 복사</button><button class="ed-reset">모두 되돌리기</button>';
+    document.body.appendChild(bar);
+    var panel = document.createElement("div");
+    panel.className = "ed-panel";
+    panel.hidden = true;
+    panel.innerHTML = '<p>아래 글이 복사되었습니다. Claude Code 창에 붙여 넣고 "반영해"라고 하세요.</p><textarea readonly></textarea><button class="ed-close">닫기</button>';
+    document.body.appendChild(panel);
+
+    function changed() { return items.filter(function (it) { return plain(it.el) !== it.orig; }); }
+    function refresh() {
+      var st = {};
+      items.forEach(function (it) {
+        var ch = plain(it.el) !== it.orig;
+        it.el.classList.toggle("ed-changed", ch);
+        if (ch) st[it.key] = { orig: it.orig, html: it.el.innerHTML };
+      });
+      save(st);
+      bar.querySelector(".ed-n").textContent = Object.keys(st).length;
+    }
+    refresh();
+
+    document.addEventListener("input", function (e) { if (e.target.closest && e.target.closest("[data-ed]")) refresh(); });
+    window.addEventListener("keydown", function (e) {
+      if (!e.target.isContentEditable) return;
+      e.stopPropagation();
+      if (e.key === "Enter") e.preventDefault();
+    }, true);
+    document.addEventListener("paste", function (e) {
+      if (!e.target.closest || !e.target.closest("[data-ed]")) return;
+      e.preventDefault();
+      var t = (e.clipboardData || window.clipboardData).getData("text").replace(/\s+/g, " ");
+      document.execCommand("insertText", false, t);
+    });
+
+    bar.querySelector(".ed-copy").addEventListener("click", function () {
+      var ch = changed();
+      var name = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
+      var out = [name + " 이론 수정 " + ch.length + "곳", ""];
+      var last = null;
+      ch.forEach(function (it) {
+        if (it.label !== last) { out.push("[" + it.label + "]"); last = it.label; }
+        out.push("전: " + it.orig, "후: " + plain(it.el), "");
+      });
+      var txt = out.join("\n");
+      var ta = panel.querySelector("textarea");
+      ta.value = txt;
+      panel.hidden = false;
+      ta.focus();
+      ta.select();
+      try { if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(function () { document.execCommand("copy"); }); else document.execCommand("copy"); } catch (e) {}
+    });
+    panel.querySelector(".ed-close").addEventListener("click", function () { panel.hidden = true; });
+    bar.querySelector(".ed-reset").addEventListener("click", function () {
+      if (!confirm("고친 내용을 모두 되돌릴까요?")) return;
+      save({});
+      location.reload();
+    });
+
+    var css = document.createElement("style");
+    css.textContent =
+      "[data-ed]:hover{outline:1px dashed rgba(200,112,30,.6);outline-offset:2px}" +
+      "[data-ed]:focus{outline:2px solid #c8701e;outline-offset:2px}" +
+      ".ed-changed{background:#fff1a8 !important;box-shadow:0 0 0 2px #fff1a8}" +
+      ".ed-bar{position:fixed;top:8px;right:8px;z-index:9999;display:flex;gap:8px;align-items:center;padding:6px 10px;background:#18212b;color:#fff;font:14px/1.3 sans-serif;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.25)}" +
+      ".ed-bar button,.ed-panel button{font:13px sans-serif;padding:4px 10px;border:0;border-radius:4px;background:#fff;color:#18212b;cursor:pointer}" +
+      ".ed-panel{position:fixed;inset:60px 10% auto 10%;z-index:9999;background:#fff;color:#18212b;padding:14px;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.3);font:14px/1.5 sans-serif}" +
+      ".ed-panel[hidden]{display:none}" +
+      ".ed-panel textarea{width:100%;height:50vh;font:13px/1.5 monospace;margin:8px 0}";
+    document.head.appendChild(css);
+  }
+
+  if (document.readyState === "complete") setTimeout(start, 300);
+  else window.addEventListener("load", function () { setTimeout(start, 300); });
+})();
+</script>
+</body></html>
