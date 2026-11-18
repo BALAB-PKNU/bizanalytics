@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11주차 랩 나라 확인</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<style>
+  :root {
+    --surf: #fcfcfb; --ink: #0b0b0b; --muted: #898781; --grid: #e1e0d9; --blue: #2a78d6; --red: #e34948;
+    --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--surf); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.65; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 48px 16px; }
+  a { color: var(--blue); text-decoration: none; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  p { color: var(--muted); margin-bottom: 20px; }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid var(--grid); border-radius: 4px; background: #fff; }
+  button { font: inherit; padding: 10px 18px; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: #fff; cursor: pointer; }
+  #result { margin-top: 24px; font-size: 18px; min-height: 2em; }
+  #result b { font-size: 28px; }
+  .miss { color: var(--red); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p><a href="./">← 게시판</a></p>
+  <h1>11주차 랩 나라 확인</h1>
+  <p>학번을 넣으면 랩에서 예측할 나라가 나온다. 이 나라 이름을 랩의 country에 띄어쓰기 없이 쓴다.</p>
+  <form id="f">
+    <input id="sid" inputmode="numeric" autocomplete="off" placeholder="학번 9자리" aria-label="학번">
+    <button>확인</button>
+  </form>
+  <div id="result" aria-live="polite"></div>
+</div>
+<script>
+const SALT = "bizanalytics-week11:";
+const MAP = {"18c58832112d29edaae3d2bd585a93052c82bda3b0b627085599d878625d76de": "미국", "7d56b8f09149f9bc1b54ac5d9d622d16d0b5c798d0d467c3e1f764f0932557c0": "대만", "2f7a6ae409b88c4a897fb720b9b82f85fbca3aa44549a5c6d7a77cab0c60fc07": "홍콩", "0fec9034fc04d144200f5e4d1d37ede76960b590d1a18c31647b57dc49509d00": "태국", "54d5058c0344261759eb605ee036ac9d975a9ea8daa4432262d49fdad6b05307": "필리핀", "0b346c7f4f8598268036b851826fdbbd127b926f9e5a6d82d149323435599485": "말레이시아", "806ced582080e7942b7b5a031d2f05ec3a870ac00446bb2284ccfcec79220253": "베트남", "a2104b76a2de6cebe8270d02091db96e5e7f3215a15923f5d976edb9addaeea7": "러시아(연방)", "e470b238724e12a82549f75e45c33fdbd913a5dd0dbac9badf19e021eb352188": "인도네시아", "4d308a54e351a9c87a0243a2d776691919511f2309a7dd04143a8e3bc7a0b5ba": "싱가포르", "ec14189eaf510bbcd57a3178cffe5f109fbbfab9b8c253ba6f662c0204311c7c": "캐나다", "5cdb10390b3b14bf4e56a709bb5814ac4ffee4bc17888c554f34b35652b7c4ec": "오스트레일리아", "1aa4963794eae455c7c23fb34440c3bf8c482af45b56bd10d8b9f9d816eec583": "인도", "98832b3c8b62b305f69bceac67e336da6b53c50bb7e8427c08fe24e7df80b8cb": "영국", "27f3735fda594ef0a77a68d2b0826b37ffca4c64b3f80c9c73ff861c5afdf1a2": "독일", "d75b4c081603f439edec1c763574b052bf38b9686fa5a287e4e48728accb9845": "프랑스"};
+async function sha256(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const sid = document.getElementById("sid").value.replace(/\s/g, "");
+  const out = document.getElementById("result");
+  const country = MAP[await sha256(SALT + sid)];
+  out.innerHTML = country
+    ? `${sid}의 나라는 <b>${country}</b>`
+    : `<span class="miss">${sid.replace(/[<>&]/g, "")}는 명단에 없다. 교수에게 문의한다.</span>`;
+});
+</script>
+</body>
+</html>

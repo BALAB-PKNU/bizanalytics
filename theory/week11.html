@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11주차 이론 — 시계열 예측</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>/* 레이아웃: 1280×720 장을 화면에 맞춰 키우거나 줄여 한 장씩 넘김. 장마다 제목 아래 하고 싶은 말 한 줄, 그 아래 그림이나 세로 표 하나.
+   숫자는 고정폭 글꼴로, 새로 붙인 열·계절(4분기)은 주황, 구성 요소의 추세는 초록, 모형이 낸 값(적합선 실선·예측 점선)은 파랑 */
+:root {
+  --desk: #dfe4e9; --paper: #fbfcfd; --ink: #18212b; --muted: #5d6874; --rule: #d6dce2; --shade: #eef2f5;
+  --series: #4a5b6c; --accent: #c8701e; --accent-soft: #fbeedf; --trend: #1f7a74; --trend-soft: #e2f1ef; --model: #2b6fcf; --model-soft: #e3ecf9; --alt: #b8437f; --noise: #8a3fa0;
+  --display: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--desk); color: var(--ink); font-family: var(--body); overflow: hidden; word-break: keep-all; }
+.viewport { position: fixed; inset: 0 0 44px 0; display: flex; align-items: center; justify-content: center; }
+.stage { width: 1280px; height: 720px; position: relative; flex: none; transform-origin: center center; background: var(--paper); box-shadow: 0 2px 18px rgba(20, 30, 40, .12); }
+.slide { position: absolute; inset: 0; padding: 40px 60px 46px; display: none; flex-direction: column; gap: 10px; }
+.slide.cur { display: flex; }
+.kick { margin: 0; font: 600 16px/1 var(--display); color: var(--accent); letter-spacing: .02em; }
+h2 { margin: 2px 0 0; font: 600 38px/1.2 var(--display); text-wrap: balance; }
+.msg { margin: 2px 0 6px; font: 500 22px/1.45 var(--body); color: var(--ink); padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.msg math { font-size: 1.05em; }
+.body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.pg { position: absolute; right: 28px; bottom: 18px; margin: 0; font: 400 14px/1 var(--mono); color: var(--muted); }
+p { margin: 0; }
+b { font-family: var(--display); font-weight: 600; color: var(--accent); margin-right: .55em; }
+i { font-style: italic; }
+
+/* 그림 */
+figure { margin: 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+figure svg { display: block; width: 100%; height: auto; }
+figure.full { flex: 1; }
+figure.full svg { flex: 1; min-height: 0; height: 100%; }
+figcaption { font-size: 16px; color: var(--muted); line-height: 1.4; }
+figcaption math { font-size: 1.05em; }
+svg text { font-family: var(--body); }
+svg .ax { fill: var(--muted); font-size: 15px; }
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .zero { stroke: var(--muted); stroke-width: 1.4; }
+svg .ser { fill: none; stroke: var(--series); stroke-width: 2.2; stroke-linejoin: round; }
+svg .pt { fill: var(--series); stroke: var(--paper); stroke-width: 2; }
+svg .q4 { fill: var(--accent); stroke: var(--paper); stroke-width: 2.5; }
+svg .fitline { fill: none; stroke: var(--model); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; opacity: .9; }
+svg .trend { fill: none; stroke: var(--trend); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+svg .fc { fill: none; stroke: var(--model); stroke-width: 3; stroke-dasharray: 8 6; stroke-linecap: round; }
+svg .fcpt { fill: var(--model); stroke: var(--paper); stroke-width: 2.5; }
+svg .src { fill: none; stroke: var(--model); stroke-width: 2.5; }
+svg .arc { fill: none; stroke: var(--model); stroke-width: 2.4; }
+svg .ahead { fill: var(--model); }
+svg .diag { stroke: var(--muted); stroke-width: 2; stroke-dasharray: 7 6; }
+svg .fc.alt { stroke: var(--alt); } svg .fcpt.alt { fill: var(--alt); }
+svg .gapline { stroke: var(--ink); stroke-width: 1.5; }
+svg .bar { fill: var(--series); }
+svg .bar.good { fill: var(--trend); }
+svg .fcbar { fill: var(--accent); }
+svg .fcbar2 { fill: var(--model); }
+svg .future { fill: var(--accent-soft); }
+svg .train { fill: var(--shade); }
+svg .test { fill: var(--accent-soft); }
+svg .bandlab { fill: var(--muted); font-size: 16px; font-weight: 500; }
+svg .qmark { fill: var(--paper); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+svg .qtxt { fill: var(--accent); font-size: 18px; font-weight: 700; }
+svg .now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+svg .ymean { stroke: var(--trend); stroke-width: 6; stroke-linecap: round; opacity: .8; }
+svg .bench { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+svg .val, svg .lab { font-size: 16px; paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+svg .val { fill: var(--ink); font-family: var(--mono); }
+svg .lab { fill: var(--ink); font-weight: 500; }
+svg .lab.acc { fill: var(--accent); }
+svg .lab.teal { fill: var(--trend); }
+svg .lab.model { fill: var(--model); }
+svg .lab.alt { fill: var(--alt); }
+svg .name { fill: var(--ink); font-size: 20px; }
+svg .opendot { fill: var(--paper); stroke: var(--series); stroke-width: 3; }
+svg .link { stroke: var(--rule); stroke-width: 7; stroke-linecap: round; }
+svg .level { stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 7 6; }
+svg .brace { fill: none; stroke: var(--accent); stroke-width: 2; }
+svg .noise { stroke: var(--noise); stroke-width: 3; }
+svg .expect { fill: var(--paper); stroke: var(--noise); stroke-width: 2.5; }
+svg .lead { fill: none; stroke-width: 1.4; stroke-dasharray: 3 4; }
+svg .tagt { font-family: var(--display); font-size: 22px; font-weight: 600; }
+svg .tagd { fill: var(--ink); font-size: 16.5px; }
+svg .k-season { stroke: var(--accent); fill: var(--accent); } svg .k-trend { stroke: var(--trend); fill: var(--trend); }
+svg .k-level { stroke: var(--muted); fill: var(--muted); } svg .k-noise { stroke: var(--noise); fill: var(--noise); }
+svg path.lead { fill: none; }
+
+/* 세로 표 */
+table.lt { border-collapse: collapse; font-size: 19px; font-variant-numeric: tabular-nums; }
+table.lt th { font: 600 16px/1.2 var(--display); color: var(--muted); padding: 6px 14px; border-bottom: 2px solid var(--ink); text-align: right; white-space: nowrap; }
+table.lt td { font-family: var(--mono); padding: 5px 14px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+table.lt th.new { color: var(--accent); background: var(--accent-soft); }
+table.lt td.new { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+table.lt tr.gap td { color: var(--muted); border-bottom: none; padding: 0 14px; line-height: 1.1; }
+table.lt tr.fut td { background: var(--shade); }
+table.lt tr.fut td.new { background: var(--accent-soft); color: var(--accent); }
+table.lt th.fc { color: var(--model); background: var(--model-soft); }
+table.lt td.fc { background: var(--model-soft); }
+table.lt tr.fut td.fc { color: var(--model); font-weight: 600; }
+table.lt.cmp td { padding-block: 3px; }
+table.lt tr.drop td { color: var(--muted); background: var(--shade); }
+table.lt td.hl, table.lt tr.drop td.hl { background: #f3d2ad; color: var(--ink); font-weight: 600; }
+table.lt td.yex { font-weight: 700; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+table.lt th .hsub { display: block; font-weight: 400; font-size: 15px; margin-top: 2px; }
+.xform { flex: 1; min-height: 0; display: grid; grid-template-columns: auto auto auto; gap: 36px; align-items: start; align-content: center; justify-content: center; }
+.xarrow { font: 600 44px/1 var(--display); color: var(--muted); align-self: center; }
+.tcap { font: 600 18px/1.3 var(--display); color: var(--ink); margin: 0 0 4px; }
+table.lt th.grp { text-align: center; border-bottom: 1px solid var(--rule); font-size: 15px; }
+table.lt td.fcin { color: var(--model); background: var(--model-soft); font-weight: 600; }
+table.lt.wide { font-size: 17px; }
+table.lt.wide th, table.lt.wide td { padding-inline: 10px; }
+
+/* 배치 */
+.split { flex: 1; min-height: 0; display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: stretch; }
+.split > .tcol, .split > .text { align-self: center; }
+.split > figure, .stack > figure { height: 100%; min-height: 0; }
+.split > figure svg, .stack > figure svg { flex: 1; min-height: 0; height: 100%; }
+.stack > figure { flex: 1; }
+.stack.nat { justify-content: center; }
+.stack.nat > figure { flex: none; height: auto; }
+.stack.nat > figure svg { flex: none; height: auto; }
+.split.s2 { grid-template-columns: auto 1fr; }
+.split.s3 { grid-template-columns: auto 1fr; gap: 56px; }
+.split.s4 { grid-template-columns: 1.35fr 1fr; gap: 40px; }
+.split.s5 { grid-template-columns: 1.15fr 1fr; gap: 36px; }
+.tcol { display: flex; flex-direction: column; gap: 12px; }
+.stack { display: flex; flex-direction: column; gap: 10px; min-height: 0; height: 100%; }
+.text { display: flex; flex-direction: column; gap: 14px; font-size: 20px; line-height: 1.5; }
+.text p.small, .small { font-size: 16px; color: var(--muted); }
+.text .caveat { font-size: 17px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; }
+.note { font-size: 16px; color: var(--muted); line-height: 1.45; }
+.foot { font-size: 16px; color: var(--muted); line-height: 1.45; }
+.hlx { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+.def, .defs p { font-size: 20px; line-height: 1.5; }
+.defs { display: flex; flex-direction: column; gap: 4px; }
+.eqline { font-size: 26px; }
+math.dm { math-style: normal; }
+.eqline math.dm { display: block; margin: 2px 0; }
+.res { color: var(--model); }
+.eqrow { display: flex; gap: 60px; align-items: center; }
+.eqsmall { font-size: 20px; }
+.eqsmall math.dm { display: block; }
+.big { font: 600 44px/1.1 var(--mono); }
+.big.acc { color: var(--accent); }
+.take { margin-top: auto; font: 500 20px/1.45 var(--display); border-left: 5px solid var(--accent); padding: 2px 0 2px 16px; }
+
+/* 1장 */
+.slide.cover { padding: 0; }
+.cover { padding: 120px 80px 0; }
+.cover .en { font: 500 20px/1 var(--mono); color: var(--accent); margin-bottom: 18px; }
+.cover h1 { margin: 0; font: 700 76px/1.1 var(--display); }
+.cover .course { margin-top: 22px; font-size: 22px; color: var(--muted); }
+.cover-fig { position: absolute; left: 50px; right: 50px; bottom: 60px; }
+.cover-fig figcaption { padding-left: 30px; }
+
+/* 2장 */
+.uses { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 2px solid var(--ink); margin-top: 40px; }
+.uses > div { min-height: 200px; }
+.uses > div { padding: 18px 18px 0; display: flex; flex-direction: column; gap: 10px; }
+.uses > div + div { border-left: 1px solid var(--rule); }
+.uses .need { font: 600 30px/1.3 var(--display); }
+.uses .dec { font-size: 21px; color: var(--muted); line-height: 1.5; }
+
+/* 5장 */
+.ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; font-size: 19px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.ways b { display: block; margin-bottom: 2px; }
+
+/* 17장 */
+.metrics { flex: 1; display: grid; grid-template-columns: 2fr 3fr; gap: 28px; }
+.mgrp { display: flex; flex-direction: column; min-width: 0; }
+.glab { font: 600 17px/1 var(--display); color: var(--muted); padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+.mrow { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.mc { padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mc + .mc { border-left: 1px solid var(--rule); }
+.mc h3 { margin: 0; font: 600 26px/1 var(--mono); }
+.mc .f { font-size: 26px; min-height: 64px; display: flex; align-items: center; }
+.mc p { font-size: 17px; color: var(--muted); line-height: 1.4; }
+.mc .big { margin-top: auto; font-size: 40px; color: var(--ink); }
+
+/* 21장 */
+.flow { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-content: start; }
+.flow li { border-top: 3px solid var(--ink); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 18px; line-height: 1.4; }
+.flow .n { font: 600 30px/1 var(--mono); color: var(--accent); }
+.flow b { font-size: 24px; color: var(--ink); }
+.flow em { font-style: normal; font-family: var(--mono); font-size: 17px; color: var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 3px; }
+
+/* 넘김 막대와 목차 */
+.navbar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; display: flex; align-items: center; justify-content: center; gap: 12px; font: 14px var(--body); color: var(--muted); }
+.navbar button { font: 500 14px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.navbar button:focus-visible, .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#count { font-family: var(--mono); min-width: 64px; text-align: center; }
+.toc { position: fixed; top: 16px; right: 16px; bottom: 60px; width: 340px; overflow: auto; background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; box-shadow: 0 6px 24px rgba(20, 30, 40, .18); }
+.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.toc a { color: var(--ink); text-decoration: none; font-size: 15px; line-height: 1.6; }
+.toc a.on { color: var(--accent); font-weight: 600; }
+.nw { white-space: nowrap; }
+[hidden] { display: none !important; }
+.lst { margin: 8px 0 0; padding-left: 1.2em; font-size: 24px; line-height: 1.6; }
+.lst li { margin: 10px 0; }
+.lst ul { padding-left: 1.2em; font-size: 22px; }
+.lst ul li { margin: 6px 0; }
+.split.half { grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: center; }
+.split.half .ttl { font: 600 20px/1.4 var(--display); margin: 0; }
+.arr { display: flex; flex-direction: column; align-items: center; color: var(--accent); }
+.arr p { margin: 0; font-size: 17px; font-weight: 600; }
+.arr span { font-size: 56px; line-height: 1; }
+.split.half table.lt { font-size: 21px; }
+.split.half > .tcol { align-items: center; }
+.split.half > figure { height: auto; }
+.split.half > figure svg { flex: none; height: auto; }
+.lst .eqline { margin: 10px 0 6px; font-size: 24px; text-align: left; }
+.lst .eqline math.dm { text-align: left; margin-left: 0; }
+.dpair { display: grid; grid-template-columns: auto auto 1fr; gap: 32px; align-items: start; margin-top: 10px; }
+.dpair .panel { display: flex; flex-direction: column; gap: 10px; }
+.dpair .ttl { font: 600 21px/1.4 var(--display); margin: 0 0 4px; padding-bottom: 6px; border-bottom: 2px solid var(--ink); }
+.dpair table.lt { font-size: 22px; }
+.dpair figure svg { width: 100%; height: 410px; }
+.dpair .arr { align-self: center; }
+.dpair .arr p { font-size: 18px; text-align: center; line-height: 1.35; }
+.dpair + .foot { margin-top: auto; }
+.lst.sm { font-size: 22px; margin-top: 0; }
+.lst.sm li { margin: 6px 0; }
+.lst.sm ul { font-size: 20px; }
+.lst.sm ul li { margin: 3px 0; }
+.xform.x3 { grid-template-columns: auto auto auto auto 1fr; gap: 18px; align-content: start; justify-content: stretch; margin-top: 6px; }
+.xform.x3 table.lt { font-size: 16px; }
+.xform.x3 .xarrow { font-size: 32px; }
+.xform.x3 figure svg { width: 100%; height: auto; }
+.xform.x3.x2 { grid-template-columns: auto auto 1fr; gap: 28px; }
+.xform.x3.x2 table.lt { font-size: 18px; }
+.xform.x3.x2 figure svg { height: 330px; }
+.xform.x16 table.lt { font-size: 16px; }
+svg .trfit { fill: none; stroke: var(--trend); stroke-width: 3; stroke-linejoin: round; }
+svg .trpt { fill: var(--trend); stroke: var(--paper); stroke-width: 1.5; }
+svg .errline { stroke: #c0392b; stroke-width: 3; }
+table.sumt { font-family: var(--body); font-size: 20px; width: 100%; table-layout: fixed; font-variant-numeric: normal; }
+table.sumt th:first-child { width: 210px; }
+table.sumt td { font-family: var(--body); white-space: normal; line-height: 1.45; }
+table.sumt td, table.sumt th { text-align: left; padding: 7px 12px; }
+table.sumt td:first-child { font-family: var(--display); font-weight: 600; }
+</style></head>
+<body>
+<div class="viewport"><main class="stage" id="stage"><section class="slide cover" data-title="시계열 예측"><div class="body">
+<div class="cover">
+  <p class="en">Time Series Forecasting</p>
+  <h1>시계열 예측</h1>
+  <p class="course">비즈니스 애널리틱스 · 11주차</p>
+</div>
+<figure class="cover-fig"><svg viewBox="0 0 1180 230" role="img"><polyline class="ser" points="34.2,191.1 82.5,193.6 130.8,170.0 179.2,109.5 227.5,195.7 275.8,188.7 324.2,165.4 372.5,106.7 420.8,188.7 469.2,182.3 517.5,164.5 565.8,100.6 614.2,186.5 662.5,178.9 710.8,143.4 759.2,83.8 807.5,171.9 855.8,160.9 904.2,125.7 952.5,62.4 1000.8,158.4 1049.2,145.9 1097.5,108.9 1145.8,28.5"/><circle class="pt" cx="34.2" cy="191.1" r="4.5"/><circle class="pt" cx="82.5" cy="193.6" r="4.5"/><circle class="pt" cx="130.8" cy="170.0" r="4.5"/><circle class="q4" cx="179.2" cy="109.5" r="6.5"/><circle class="pt" cx="227.5" cy="195.7" r="4.5"/><circle class="pt" cx="275.8" cy="188.7" r="4.5"/><circle class="pt" cx="324.2" cy="165.4" r="4.5"/><circle class="q4" cx="372.5" cy="106.7" r="6.5"/><circle class="pt" cx="420.8" cy="188.7" r="4.5"/><circle class="pt" cx="469.2" cy="182.3" r="4.5"/><circle class="pt" cx="517.5" cy="164.5" r="4.5"/><circle class="q4" cx="565.8" cy="100.6" r="6.5"/><circle class="pt" cx="614.2" cy="186.5" r="4.5"/><circle class="pt" cx="662.5" cy="178.9" r="4.5"/><circle class="pt" cx="710.8" cy="143.4" r="4.5"/><circle class="q4" cx="759.2" cy="83.8" r="6.5"/><circle class="pt" cx="807.5" cy="171.9" r="4.5"/><circle class="pt" cx="855.8" cy="160.9" r="4.5"/><circle class="pt" cx="904.2" cy="125.7" r="4.5"/><circle class="q4" cx="952.5" cy="62.4" r="6.5"/><circle class="pt" cx="1000.8" cy="158.4" r="4.5"/><circle class="pt" cx="1049.2" cy="145.9" r="4.5"/><circle class="pt" cx="1097.5" cy="108.9" r="4.5"/><circle class="q4" cx="1145.8" cy="28.5" r="6.5"/></svg><figcaption>한 백화점의 6년간 분기 매출 24개, 이번 주 이론의 예시 자료</figcaption></figure></div><p class="pg">1 / 19</p></section><section class="slide " data-title="시계열 예측이란"><p class="kick">도입</p><h2>시계열 예측이란</h2><div class="body">
+<ul class="lst">
+  <li><b>시계열 예측</b>(time series forecasting): 시간 순서로 관측한 과거의 값을 이용하여, 아직 관측하지 않은 미래의 값을 예측하는 방법</li>
+  <li>시계열 예측 적용분야
+    <ul>
+      <li>재고관리: 다음 몇 달의 수요를 예측하여 생산량과 발주량을 정함</li>
+      <li>교통: 승객 수를 예측하여 열차·항공 편성, 좌석 공급, 인력 배치를 정함</li>
+      <li>마케팅: 매출을 예측하여 예산과 자금 계획을 세움</li>
+      <li>전력: 전력 사용량을 예측하여 설비 용량을 계획함</li>
+    </ul></li>
+</ul></div><p class="pg">2 / 19</p></section><section class="slide " data-title="시계열 예측의 수학적 정의"><p class="kick">도입</p><h2>시계열 예측의 수학적 정의</h2><div class="body">
+<ul class="lst">
+  <li>시계열: 시점 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>t</mi><mo>&#x0003D;</mo><mn>1</mn><mo>&#x0002C;</mo><mn>2</mn><mo>&#x0002C;</mo><mo>&#x02026;</mo><mo>&#x0002C;</mo><mi>n</mi></mrow></math>에서 차례로 관측한 값의 수열 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mn>1</mn></msub><mo>&#x0002C;</mo><msub><mi>y</mi><mn>2</mn></msub><mo>&#x0002C;</mo><mo>&#x02026;</mo><mo>&#x0002C;</mo><msub><mi>y</mi><mi>n</mi></msub></mrow></math></li>
+  <li>시계열 예측: 마지막 관측 시점 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>n</mi></mrow></math>까지의 값으로 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>h</mi></mrow></math>기간 뒤의 값 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>n</mi><mo>&#x0002B;</mo><mi>h</mi></mrow></msub></mrow></math>를 추정하는 함수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>f</mi></mrow></math>를 정하는 문제
+    <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mrow><mi>n</mi><mo>&#x0002B;</mo><mi>h</mi></mrow></msub><mo>&#x0003D;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><msub><mi>y</mi><mn>1</mn></msub><mo>&#x0002C;</mo><msub><mi>y</mi><mn>2</mn></msub><mo>&#x0002C;</mo><mo>&#x02026;</mo><mo>&#x0002C;</mo><msub><mi>y</mi><mi>n</mi></msub><mo stretchy="false">&#x00029;</mo><mo>&#x0002C;</mo><mspace width="2em" /><mi>h</mi><mo>&#x0003D;</mo><mn>1</mn><mo>&#x0002C;</mo><mn>2</mn><mo>&#x0002C;</mo><mo>&#x02026;</mo><mo>&#x0002C;</mo><mi>H</mi></mrow></math></div>
+    <ul>
+      <li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mrow><mi>n</mi><mo>&#x0002B;</mo><mi>h</mi></mrow></msub></mrow></math>: 시점 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>n</mi></mrow></math>까지 관측한 값으로 낸 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>h</mi></mrow></math>기간 뒤의 예측값</li>
+      <li><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>h</mi></mrow></math>: 예측 기간(horizon), <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>H</mi></mrow></math>: 예측할 가장 먼 기간</li>
+    </ul></li>
+  <li>회귀분석과의 차이
+    <ul>
+      <li>회귀분석: 같은 행에 주어진 설명 변수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>x</mi></mrow></math>로 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>y</mi></mrow></math>를 설명함</li>
+      <li>시계열 예측: 같은 수열의 과거 값으로 아직 관측하지 않은 미래 값을 냄</li>
+    </ul></li>
+  <li>예: 6년치 분기 매출 24개(<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>n</mi><mo>&#x0003D;</mo><mn>24</mn></mrow></math>)로 다음 해 네 분기 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mrow><mn>25</mn></mrow></msub><mo>&#x0002C;</mo><mo>&#x02026;</mo><mo>&#x0002C;</mo><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mrow><mn>28</mn></mrow></msub></mrow></math>를 예측함(<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>H</mi><mo>&#x0003D;</mo><mn>4</mn></mrow></math>)</li>
+</ul></div><p class="pg">3 / 19</p></section><section class="slide " data-title="시계열 데이터 예시: 백화점 분기 매출 (DepartmentStoreSales)"><p class="kick">도입</p><h2>시계열 데이터 예시: 백화점 분기 매출 (DepartmentStoreSales)</h2><div class="body">
+<div class="dpair">
+  <div class="panel"><p class="ttl">표: 분기별 매출 24행</p><table class="lt cmp"><tr><th class="">t</th><th class="">연도</th><th class="">분기</th><th class="new">매출 y</th></tr><tr><td class="">1</td><td class="">1</td><td class="">1</td><td class="new">50.1</td></tr><tr><td class="">2</td><td class="">1</td><td class="">2</td><td class="new">49.3</td></tr><tr><td class="">3</td><td class="">1</td><td class="">3</td><td class="new">57.0</td></tr><tr><td class="">4</td><td class="">1</td><td class="">4</td><td class="new">76.8</td></tr><tr class="gap"><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td><td class="new">⋮</td></tr><tr><td class="">21</td><td class="">6</td><td class="">1</td><td class="new">60.8</td></tr><tr><td class="">22</td><td class="">6</td><td class="">2</td><td class="new">64.9</td></tr><tr><td class="">23</td><td class="">6</td><td class="">3</td><td class="new">77.0</td></tr><tr><td class="">24</td><td class="">6</td><td class="">4</td><td class="new">103.3</td></tr></table>
+    <p class="note">t: 시점 번호 · y: 예측에 쓰는 값</p></div>
+  <div class="arr"><p>t 순서대로<br>이어 그리면</p><span>→</span></div>
+  <div class="panel"><p class="ttl">그래프: 같은 24개 값</p><figure><svg viewBox="0 0 710 410" role="img"><line class="grid" x1="52" x2="696" y1="376.0" y2="376.0"/><text class="ax" x="44" y="381.0" text-anchor="end">40</text><line class="grid" x1="52" x2="696" y1="277.7" y2="277.7"/><text class="ax" x="44" y="282.7" text-anchor="end">60</text><line class="grid" x1="52" x2="696" y1="179.4" y2="179.4"/><text class="ax" x="44" y="184.4" text-anchor="end">80</text><line class="grid" x1="52" x2="696" y1="81.1" y2="81.1"/><text class="ax" x="44" y="86.1" text-anchor="end">100</text><text class="ax" x="105.7" y="400" text-anchor="middle">1년차</text><line class="grid" x1="159.3" x2="159.3" y1="32" y2="376"/><text class="ax" x="213.0" y="400" text-anchor="middle">2년차</text><line class="grid" x1="266.7" x2="266.7" y1="32" y2="376"/><text class="ax" x="320.3" y="400" text-anchor="middle">3년차</text><line class="grid" x1="374.0" x2="374.0" y1="32" y2="376"/><text class="ax" x="427.7" y="400" text-anchor="middle">4년차</text><line class="grid" x1="481.3" x2="481.3" y1="32" y2="376"/><text class="ax" x="535.0" y="400" text-anchor="middle">5년차</text><line class="grid" x1="588.7" x2="588.7" y1="32" y2="376"/><text class="ax" x="642.3" y="400" text-anchor="middle">6년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><polyline class="ser" points="65.4,326.4 92.2,330.3 119.1,292.5 145.9,195.2 172.8,333.7 199.6,322.4 226.4,285.1 253.2,190.7 280.1,322.4 306.9,312.1 333.8,283.6 360.6,180.9 387.4,319.0 414.2,306.7 441.1,249.7 467.9,153.9 494.8,295.4 521.6,277.7 548.4,221.2 575.2,119.5 602.1,273.8 628.9,253.6 655.8,194.2 682.6,64.9"/><circle class="pt" cx="65.4" cy="326.4" r="4.5"/><circle class="pt" cx="92.2" cy="330.3" r="4.5"/><circle class="pt" cx="119.1" cy="292.5" r="4.5"/><circle class="q4" cx="145.9" cy="195.2" r="6.5"/><circle class="pt" cx="172.8" cy="333.7" r="4.5"/><circle class="pt" cx="199.6" cy="322.4" r="4.5"/><circle class="pt" cx="226.4" cy="285.1" r="4.5"/><circle class="q4" cx="253.2" cy="190.7" r="6.5"/><circle class="pt" cx="280.1" cy="322.4" r="4.5"/><circle class="pt" cx="306.9" cy="312.1" r="4.5"/><circle class="pt" cx="333.8" cy="283.6" r="4.5"/><circle class="q4" cx="360.6" cy="180.9" r="6.5"/><circle class="pt" cx="387.4" cy="319.0" r="4.5"/><circle class="pt" cx="414.2" cy="306.7" r="4.5"/><circle class="pt" cx="441.1" cy="249.7" r="4.5"/><circle class="q4" cx="467.9" cy="153.9" r="6.5"/><circle class="pt" cx="494.8" cy="295.4" r="4.5"/><circle class="pt" cx="521.6" cy="277.7" r="4.5"/><circle class="pt" cx="548.4" cy="221.2" r="4.5"/><circle class="q4" cx="575.2" cy="119.5" r="6.5"/><circle class="pt" cx="602.1" cy="273.8" r="4.5"/><circle class="pt" cx="628.9" cy="253.6" r="4.5"/><circle class="pt" cx="655.8" cy="194.2" r="4.5"/><circle class="q4" cx="682.6" cy="64.9" r="6.5"/></svg></figure>
+    <p class="note">주황 점: 4분기</p></div>
+</div>
+<p class="foot">자료: Shmueli 외, <i>Machine Learning for Business Analytics</i> 연습문제 자료, 한 백화점의 6년간 분기 매출(단위: 천)</p></div><p class="pg">4 / 19</p></section><section class="slide " data-title="구성 요소와 계절 주기"><p class="kick">도입</p><h2>구성 요소와 계절 주기</h2><div class="body">
+<ul class="lst">
+  <li>대부분의 시계열에서는 추세(trend)와 계절성(seasonality)을 발견할 수 있음
+    <ul>
+      <li>추세: 오랜 기간에 걸쳐 값이 꾸준히 늘거나 줄어드는 움직임</li>
+      <li>계절성: 일정한 기간마다 같은 모양이 되풀이되는 움직임</li>
+    </ul></li>
+  <li>백화점 매출 그래프에서 확인할 수 있는 추세와 계절성</li>
+</ul>
+<figure class="full"><svg viewBox="0 0 1180 440" role="img"><line class="grid" x1="52" x2="930" y1="406.0" y2="406.0"/><text class="ax" x="44" y="411.0" text-anchor="end">40</text><line class="grid" x1="52" x2="930" y1="303.7" y2="303.7"/><text class="ax" x="44" y="308.7" text-anchor="end">60</text><line class="grid" x1="52" x2="930" y1="201.4" y2="201.4"/><text class="ax" x="44" y="206.4" text-anchor="end">80</text><line class="grid" x1="52" x2="930" y1="99.1" y2="99.1"/><text class="ax" x="44" y="104.1" text-anchor="end">100</text><text class="ax" x="125.2" y="430" text-anchor="middle">1년차</text><line class="grid" x1="198.3" x2="198.3" y1="48" y2="406"/><text class="ax" x="271.5" y="430" text-anchor="middle">2년차</text><line class="grid" x1="344.7" x2="344.7" y1="48" y2="406"/><text class="ax" x="417.8" y="430" text-anchor="middle">3년차</text><line class="grid" x1="491.0" x2="491.0" y1="48" y2="406"/><text class="ax" x="564.2" y="430" text-anchor="middle">4년차</text><line class="grid" x1="637.3" x2="637.3" y1="48" y2="406"/><text class="ax" x="710.5" y="430" text-anchor="middle">5년차</text><line class="grid" x1="783.7" x2="783.7" y1="48" y2="406"/><text class="ax" x="856.8" y="430" text-anchor="middle">6년차</text><text class="ax" x="44" y="34" text-anchor="end">매출</text><line class="level" x1="52" x2="930" y1="279.4" y2="279.4"/><polyline class="trend" points="143.5,313.4 180.0,313.3 216.6,311.3 253.2,309.8 289.8,307.7 326.4,304.9 363.0,303.4 399.5,301.9 436.1,300.2 472.7,299.0 509.3,293.9 545.9,286.0 582.5,279.4 619.0,272.6 655.6,265.1 692.2,256.9 728.8,249.6 765.4,243.7 802.0,237.0 838.5,226.4"/><polyline class="ser" points="70.3,354.3 106.9,358.4 143.5,319.1 180.0,217.8 216.6,362.0 253.2,350.3 289.8,311.4 326.4,213.2 363.0,350.3 399.5,339.5 436.1,309.9 472.7,203.0 509.3,346.7 545.9,333.9 582.5,274.6 619.0,174.8 655.6,322.1 692.2,303.7 728.8,244.9 765.4,139.0 802.0,299.6 838.5,278.7 875.1,216.8 911.7,82.3"/><circle class="pt" cx="70.3" cy="354.3" r="4.5"/><circle class="pt" cx="106.9" cy="358.4" r="4.5"/><circle class="pt" cx="143.5" cy="319.1" r="4.5"/><circle class="q4" cx="180.0" cy="217.8" r="6.5"/><circle class="pt" cx="216.6" cy="362.0" r="4.5"/><circle class="pt" cx="253.2" cy="350.3" r="4.5"/><circle class="pt" cx="289.8" cy="311.4" r="4.5"/><circle class="q4" cx="326.4" cy="213.2" r="6.5"/><circle class="pt" cx="363.0" cy="350.3" r="4.5"/><circle class="pt" cx="399.5" cy="339.5" r="4.5"/><circle class="pt" cx="436.1" cy="309.9" r="4.5"/><circle class="q4" cx="472.7" cy="203.0" r="6.5"/><circle class="pt" cx="509.3" cy="346.7" r="4.5"/><circle class="pt" cx="545.9" cy="333.9" r="4.5"/><circle class="pt" cx="582.5" cy="274.6" r="4.5"/><circle class="q4" cx="619.0" cy="174.8" r="6.5"/><circle class="pt" cx="655.6" cy="322.1" r="4.5"/><circle class="pt" cx="692.2" cy="303.7" r="4.5"/><circle class="pt" cx="728.8" cy="244.9" r="4.5"/><circle class="q4" cx="765.4" cy="139.0" r="6.5"/><circle class="pt" cx="802.0" cy="299.6" r="4.5"/><circle class="pt" cx="838.5" cy="278.7" r="4.5"/><circle class="pt" cx="875.1" cy="216.8" r="4.5"/><circle class="q4" cx="911.7" cy="82.3" r="6.5"/><path class="brace" d="M787.3,66.3 V58.3 H926.3 V66.3"/><text class="lab acc" x="856.8" y="48.3" text-anchor="middle">한 주기 m = 4분기</text><path class="lead k-season" d="M919.7,82.3 L948.0,78.7"/><text class="tagt k-season" x="958" y="85.7">계절성</text><text class="tagd" x="958" y="110.7">해마다 4분기에</text><text class="tagd" x="958" y="132.7">크게 오름</text><path class="lead k-trend" d="M842.5,226.4 L948.0,181.0"/><text class="tagt k-trend" x="958" y="188.0">추세</text><text class="tagd" x="958" y="213.0">4분기 이동평균, 해마다</text><text class="tagd" x="958" y="235.0">늘고 뒤로 갈수록</text><text class="tagd" x="958" y="257.0">빨리 늘어남</text><path class="lead k-level" d="M930.0,279.4 L948.0,298.6"/><text class="tagt k-level" x="958" y="305.6">수준</text><text class="tagd" x="958" y="330.6">전체 평균 64.8</text></svg></figure></div><p class="pg">5 / 19</p></section><section class="slide " data-title="시계열 예측 모델링 방식"><p class="kick">도입</p><h2>시계열 예측 모델링 방식</h2><div class="body">
+<ul class="lst sm">
+  <li>시계열 예측 방법은 예측값을 계산하는 함수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>f</mi></mrow></math>를 정하는 방식에 따라 나눌 수 있음</li>
+  <li><b>Naive 예측</b>
+    <ul>
+      <li>모형을 추정하지 않고, 과거에 관측한 값을 그대로 미래의 예측값으로 쓰는 방식</li>
+      <li>naive 예측은 마지막 관측값을, seasonal naive 예측은 직전 주기의 같은 계절에 관측한 값을 예측값으로 씀</li>
+    </ul></li>
+  <li><b>자기회귀</b>(autoregression)
+    <ul>
+      <li>같은 시계열의 직전 몇 기간의 값을 설명 변수로, 그 기간의 값을 결과 변수로 두는 회귀 모형</li>
+      <li>추정한 회귀식에 가장 최근의 관측값을 넣어 다음 기간의 예측값을 계산함</li>
+      <li>설명 변수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>X</mi></mrow></math>가 직전 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>p</mi></mrow></math>개 기간의 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>y</mi></mrow></math>값인 회귀 모형: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>&#x0003D;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>1</mn></mrow></msub><mo>&#x0002C;</mo><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>2</mn></mrow></msub><mo>&#x0002C;</mo><mo>&#x02026;</mo><mo>&#x0002C;</mo><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mi>p</mi></mrow></msub><mo stretchy="false">&#x00029;</mo></mrow></math></li>
+    </ul></li>
+  <li><b>추세·계절성 회귀</b>
+    <ul>
+      <li>시계열의 값을 시간의 함수로 보는 회귀 모형</li>
+      <li>각 기간의 값을 그 기간이 언제인지, 즉 시간이 얼마나 흘렀는지(추세)와 어느 계절인지(계절성)로 설명함</li>
+      <li>설명 변수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>X</mi></mrow></math>가 시점 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>t</mi></mrow></math>와 계절인 회귀 모형: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>&#x0003D;</mo><mi>f</mi><mo stretchy="false">&#x00028;</mo><mi>t</mi><mo>&#x0002C;</mo><mtext>&#x000A0;</mtext><mtext>계절</mtext><mo stretchy="false">&#x00029;</mo></mrow></math></li>
+    </ul></li>
+</ul></div><p class="pg">6 / 19</p></section><section class="slide " data-title="naive 예측"><p class="kick">모델링</p><h2>naive 예측</h2><p class="msg">마지막 값을 앞으로도 그대로 씀</p><div class="body">
+<div class="split">
+  <div class="tcol"><div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mrow><mi>n</mi><mo>&#x0002B;</mo><mi>h</mi></mrow></msub><mo>&#x0003D;</mo><msub><mi>y</mi><mi>n</mi></msub></mrow></math></div><table class="lt cmp"><tr><th class="">t</th><th class="">매출 y</th><th class="fc">예측</th></tr><tr><td class="">17</td><td class="">56.4</td><td class="fc">85.2</td></tr><tr><td class="">18</td><td class="">60.0</td><td class="fc">56.4</td></tr><tr><td class="">19</td><td class="">71.5</td><td class="fc">60.0</td></tr><tr><td class="">20</td><td class="">92.2</td><td class="fc">71.5</td></tr><tr><td class="">21</td><td class="">60.8</td><td class="fc">92.2</td></tr><tr><td class="">22</td><td class="">64.9</td><td class="fc">60.8</td></tr><tr><td class="">23</td><td class="">77.0</td><td class="fc">64.9</td></tr><tr><td class="">24</td><td class="">103.3</td><td class="fc">77.0</td></tr><tr class="fut"><td class="">25</td><td class="">?</td><td class="fc">103.3</td></tr><tr class="fut"><td class="">26</td><td class="">?</td><td class="fc">103.3</td></tr><tr class="fut"><td class="">27</td><td class="">?</td><td class="fc">103.3</td></tr><tr class="fut"><td class="">28</td><td class="">?</td><td class="fc">103.3</td></tr></table><p class="note">시계열 표의 17~24행 뒤에 25~28행(미래)을 더함</p></div>
+  <figure><svg viewBox="0 0 560 380" role="img"><line class="grid" x1="52" x2="546" y1="346.0" y2="346.0"/><text class="ax" x="44" y="351.0" text-anchor="end">40</text><line class="grid" x1="52" x2="546" y1="265.5" y2="265.5"/><text class="ax" x="44" y="270.5" text-anchor="end">60</text><line class="grid" x1="52" x2="546" y1="185.0" y2="185.0"/><text class="ax" x="44" y="190.0" text-anchor="end">80</text><line class="grid" x1="52" x2="546" y1="104.5" y2="104.5"/><text class="ax" x="44" y="109.5" text-anchor="end">100</text><text class="ax" x="113.8" y="370" text-anchor="middle">4년차</text><line class="grid" x1="175.5" x2="175.5" y1="32" y2="346"/><text class="ax" x="237.2" y="370" text-anchor="middle">5년차</text><line class="grid" x1="299.0" x2="299.0" y1="32" y2="346"/><text class="ax" x="360.8" y="370" text-anchor="middle">6년차</text><line class="grid" x1="422.5" x2="422.5" y1="32" y2="346"/><text class="ax" x="484.2" y="370" text-anchor="middle">7년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="future" x="422.5" y="32" width="123.5" height="314.0"/><polyline class="ser" points="67.4,299.3 98.3,289.2 129.2,242.5 160.1,164.0 190.9,280.0 221.8,265.5 252.7,219.2 283.6,135.9 314.4,262.3 345.3,245.8 376.2,197.1 407.1,91.2"/><circle class="pt" cx="67.4" cy="299.3" r="4.5"/><circle class="pt" cx="98.3" cy="289.2" r="4.5"/><circle class="pt" cx="129.2" cy="242.5" r="4.5"/><circle class="q4" cx="160.1" cy="164.0" r="6.5"/><circle class="pt" cx="190.9" cy="280.0" r="4.5"/><circle class="pt" cx="221.8" cy="265.5" r="4.5"/><circle class="pt" cx="252.7" cy="219.2" r="4.5"/><circle class="q4" cx="283.6" cy="135.9" r="6.5"/><circle class="pt" cx="314.4" cy="262.3" r="4.5"/><circle class="pt" cx="345.3" cy="245.8" r="4.5"/><circle class="pt" cx="376.2" cy="197.1" r="4.5"/><circle class="q4" cx="407.1" cy="91.2" r="6.5"/><circle class="src" cx="407.1" cy="91.2" r="12"/><polyline class="fc" points="407.1,91.2 437.9,91.2 468.8,91.2 499.7,91.2 530.6,91.2"/><text class="lab" x="407.1" y="69.2" text-anchor="middle">마지막 값 103.3</text><circle class="fcpt" cx="437.9" cy="91.2" r="6.5"/><circle class="fcpt" cx="468.8" cy="91.2" r="6.5"/><circle class="fcpt" cx="499.7" cy="91.2" r="6.5"/><circle class="fcpt" cx="530.6" cy="91.2" r="6.5"/></svg><figcaption>동그라미: 마지막 값, 점선과 점: 7년차 예측</figcaption></figure>
+</div></div><p class="pg">7 / 19</p></section><section class="slide " data-title="seasonal naive 예측"><p class="kick">모델링</p><h2>seasonal naive 예측</h2><p class="msg">한 주기 전 같은 계절의 값을 그대로 씀</p><div class="body">
+<div class="split">
+  <div class="tcol"><div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mrow><mi>n</mi><mo>&#x0002B;</mo><mi>h</mi></mrow></msub><mo>&#x0003D;</mo><msub><mi>y</mi><mrow><mi>n</mi><mo>&#x0002B;</mo><mi>h</mi><mo>&#x02212;</mo><mi>m</mi><mi>k</mi></mrow></msub><mo>&#x0002C;</mo><mspace width="1em" /><mi>k</mi><mo>&#x0003D;</mo><mi>&#x02308;</mi><mi>h</mi><mo>&#x0002F;</mo><mi>m</mi><mi>&#x02309;</mi></mrow></math></div><table class="lt cmp"><tr><th class="">t</th><th class="">매출 y</th><th class="fc">예측</th></tr><tr><td class="">17</td><td class="">56.4</td><td class="fc">51.6</td></tr><tr><td class="">18</td><td class="">60.0</td><td class="fc">54.1</td></tr><tr><td class="">19</td><td class="">71.5</td><td class="fc">65.7</td></tr><tr><td class="">20</td><td class="">92.2</td><td class="fc">85.2</td></tr><tr><td class="">21</td><td class="">60.8</td><td class="fc">56.4</td></tr><tr><td class="">22</td><td class="">64.9</td><td class="fc">60.0</td></tr><tr><td class="">23</td><td class="">77.0</td><td class="fc">71.5</td></tr><tr><td class="">24</td><td class="">103.3</td><td class="fc">92.2</td></tr><tr class="fut"><td class="">25</td><td class="">?</td><td class="fc">60.8</td></tr><tr class="fut"><td class="">26</td><td class="">?</td><td class="fc">64.9</td></tr><tr class="fut"><td class="">27</td><td class="">?</td><td class="fc">77.0</td></tr><tr class="fut"><td class="">28</td><td class="">?</td><td class="fc">103.3</td></tr></table><p class="note">시계열 표의 17~24행 뒤에 25~28행(미래)을 더함</p></div>
+  <figure><svg viewBox="0 0 560 380" role="img"><line class="grid" x1="52" x2="546" y1="346.0" y2="346.0"/><text class="ax" x="44" y="351.0" text-anchor="end">40</text><line class="grid" x1="52" x2="546" y1="265.5" y2="265.5"/><text class="ax" x="44" y="270.5" text-anchor="end">60</text><line class="grid" x1="52" x2="546" y1="185.0" y2="185.0"/><text class="ax" x="44" y="190.0" text-anchor="end">80</text><line class="grid" x1="52" x2="546" y1="104.5" y2="104.5"/><text class="ax" x="44" y="109.5" text-anchor="end">100</text><text class="ax" x="113.8" y="370" text-anchor="middle">4년차</text><line class="grid" x1="175.5" x2="175.5" y1="32" y2="346"/><text class="ax" x="237.2" y="370" text-anchor="middle">5년차</text><line class="grid" x1="299.0" x2="299.0" y1="32" y2="346"/><text class="ax" x="360.8" y="370" text-anchor="middle">6년차</text><line class="grid" x1="422.5" x2="422.5" y1="32" y2="346"/><text class="ax" x="484.2" y="370" text-anchor="middle">7년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="future" x="422.5" y="32" width="123.5" height="314.0"/><polyline class="ser" points="67.4,299.3 98.3,289.2 129.2,242.5 160.1,164.0 190.9,280.0 221.8,265.5 252.7,219.2 283.6,135.9 314.4,262.3 345.3,245.8 376.2,197.1 407.1,91.2"/><circle class="pt" cx="67.4" cy="299.3" r="4.5"/><circle class="pt" cx="98.3" cy="289.2" r="4.5"/><circle class="pt" cx="129.2" cy="242.5" r="4.5"/><circle class="q4" cx="160.1" cy="164.0" r="6.5"/><circle class="pt" cx="190.9" cy="280.0" r="4.5"/><circle class="pt" cx="221.8" cy="265.5" r="4.5"/><circle class="pt" cx="252.7" cy="219.2" r="4.5"/><circle class="q4" cx="283.6" cy="135.9" r="6.5"/><circle class="pt" cx="314.4" cy="262.3" r="4.5"/><circle class="pt" cx="345.3" cy="245.8" r="4.5"/><circle class="pt" cx="376.2" cy="197.1" r="4.5"/><circle class="q4" cx="407.1" cy="91.2" r="6.5"/><circle class="src" cx="314.4" cy="262.3" r="10"/><path class="arc" d="M314.4,253.3 Q376.2,223.3 437.9,253.3"/><polygon class="ahead" points="437.9,253.3 426.9,252.9 430.9,244.8"/><circle class="src" cx="345.3" cy="245.8" r="10"/><path class="arc" d="M345.3,236.8 Q407.1,206.8 468.8,236.8"/><polygon class="ahead" points="468.8,236.8 457.8,236.4 461.7,228.3"/><circle class="src" cx="376.2" cy="197.1" r="10"/><path class="arc" d="M376.2,188.1 Q437.9,158.1 499.7,188.1"/><polygon class="ahead" points="499.7,188.1 488.7,187.7 492.6,179.6"/><circle class="src" cx="407.1" cy="91.2" r="10"/><path class="arc" d="M407.1,82.2 Q468.8,52.2 530.6,82.2"/><polygon class="ahead" points="530.6,82.2 519.6,81.8 523.5,73.8"/><polyline class="fc" points="407.1,91.2 437.9,262.3 468.8,245.8 499.7,197.1 530.6,91.2"/><circle class="fcpt" cx="437.9" cy="262.3" r="6.5"/><circle class="fcpt" cx="468.8" cy="245.8" r="6.5"/><circle class="fcpt" cx="499.7" cy="197.1" r="6.5"/><circle class="fcpt" cx="530.6" cy="91.2" r="6.5"/></svg><figcaption>동그라미: 마지막 한 주기의 값, 점선과 점: 7년차 예측</figcaption></figure>
+</div></div><p class="pg">8 / 19</p></section><section class="slide " data-title="자기회귀 모형"><p class="kick">모델링</p><h2>자기회귀 모형</h2><p class="msg">직전 값 몇 개를 입력, 그 기간의 값을 출력으로 묶어 시계열을 학습용 데이터셋으로 바꿈</p><div class="body">
+<div class="def"><b>자기회귀</b>autoregression, 같은 시계열의 직전 값들(lag)을 입력으로 그 기간의 값을 맞추는 회귀</div>
+<div class="def"><b>학습할 회귀식</b><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>&#x0003D;</mo><msub><mi>&#x003B2;</mi><mn>0</mn></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>1</mn></msub><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>1</mn></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>2</mn></msub><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>2</mn></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>3</mn></msub><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>3</mn></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>4</mn></msub><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>4</mn></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B5;</mi><mi>t</mi></msub></mrow></math></div>
+<div class="xform x3">
+  <div class="tcol"><p class="tcap">원 시계열 (24개 기간)</p><table class="lt cmp"><tr><th class="">t</th><th class="">y</th></tr><tr class=""><td class="">1</td><td class="hl">50.1</td></tr><tr class=""><td class="">2</td><td class="hl">49.3</td></tr><tr class=""><td class="">3</td><td class="hl">57.0</td></tr><tr class=""><td class="">4</td><td class="hl">76.8</td></tr><tr class=""><td class="">5</td><td class="yex">48.6</td></tr><tr class=""><td class="">6</td><td class="">50.9</td></tr><tr class=""><td class="">7</td><td class="">58.5</td></tr><tr class="gap"><td class="">⋮</td><td class="">⋮</td></tr><tr class=""><td class="">24</td><td class="">103.3</td></tr></table></div>
+  <div class="xarrow">→</div>
+  <div class="tcol"><p class="tcap">학습용 데이터셋 (20개, t = 5~24)</p><table class="lt cmp"><tr><th></th><th class="grp new" colspan="4">입력: 직전 4개 값</th><th class="grp">출력</th></tr><tr><th class="">t</th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>4</mn></mrow></msub></mrow></math><span class="hsub">lag 4</span></th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>3</mn></mrow></msub></mrow></math><span class="hsub">lag 3</span></th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>2</mn></mrow></msub></mrow></math><span class="hsub">lag 2</span></th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>1</mn></mrow></msub></mrow></math><span class="hsub">lag 1</span></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub></mrow></math></th></tr><tr class=""><td class="">5</td><td class="new hl">50.1</td><td class="new hl">49.3</td><td class="new hl">57.0</td><td class="new hl">76.8</td><td class="yex">48.6</td></tr><tr class=""><td class="">6</td><td class="new">49.3</td><td class="new">57.0</td><td class="new">76.8</td><td class="new">48.6</td><td class="">50.9</td></tr><tr class=""><td class="">7</td><td class="new">57.0</td><td class="new">76.8</td><td class="new">48.6</td><td class="new">50.9</td><td class="">58.5</td></tr><tr class="gap"><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td></tr><tr class=""><td class="">24</td><td class="new">92.2</td><td class="new">60.8</td><td class="new">64.9</td><td class="new">77.0</td><td class="">103.3</td></tr></table></div>
+  <div class="xarrow">→</div>
+  <figure><p class="tcap">추정한 식의 적합값과 7년차 예측</p><svg viewBox="0 0 520 330" role="img"><line class="grid" x1="52" x2="506" y1="296.0" y2="296.0"/><text class="ax" x="44" y="301.0" text-anchor="end">40</text><line class="grid" x1="52" x2="506" y1="230.0" y2="230.0"/><text class="ax" x="44" y="235.0" text-anchor="end">60</text><line class="grid" x1="52" x2="506" y1="164.0" y2="164.0"/><text class="ax" x="44" y="169.0" text-anchor="end">80</text><line class="grid" x1="52" x2="506" y1="98.0" y2="98.0"/><text class="ax" x="44" y="103.0" text-anchor="end">100</text><text class="ax" x="84.4" y="320" text-anchor="middle">1년차</text><line class="grid" x1="116.9" x2="116.9" y1="32" y2="296"/><text class="ax" x="149.3" y="320" text-anchor="middle">2년차</text><line class="grid" x1="181.7" x2="181.7" y1="32" y2="296"/><text class="ax" x="214.1" y="320" text-anchor="middle">3년차</text><line class="grid" x1="246.6" x2="246.6" y1="32" y2="296"/><text class="ax" x="279.0" y="320" text-anchor="middle">4년차</text><line class="grid" x1="311.4" x2="311.4" y1="32" y2="296"/><text class="ax" x="343.9" y="320" text-anchor="middle">5년차</text><line class="grid" x1="376.3" x2="376.3" y1="32" y2="296"/><text class="ax" x="408.7" y="320" text-anchor="middle">6년차</text><line class="grid" x1="441.1" x2="441.1" y1="32" y2="296"/><text class="ax" x="473.6" y="320" text-anchor="middle">7년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="future" x="441.1" y="32" width="64.9" height="264.0"/><polyline class="fitline" points="125.0,260.5 141.2,262.2 157.4,234.7 173.6,165.8 189.8,264.9 206.0,254.7 222.2,227.3 238.5,160.8 254.7,254.8 270.9,245.7 287.1,225.0 303.3,150.7 319.5,248.0 335.8,236.1 352.0,193.6 368.2,124.6 384.4,223.9 400.6,208.2 416.8,166.4 433.0,93.3"/><polyline class="fc" points="433.0,93.3 449.2,200.6 465.5,181.8 481.7,136.3 497.9,42.0"/><circle class="fcpt" cx="449.2" cy="200.6" r="6.5"/><circle class="fcpt" cx="465.5" cy="181.8" r="6.5"/><circle class="fcpt" cx="481.7" cy="136.3" r="6.5"/><circle class="fcpt" cx="497.9" cy="42.0" r="6.5"/><circle class="pt" cx="60.1" cy="262.7" r="4.5"/><circle class="pt" cx="76.3" cy="265.3" r="4.5"/><circle class="pt" cx="92.5" cy="239.9" r="4.5"/><circle class="q4" cx="108.8" cy="174.6" r="6.5"/><circle class="pt" cx="125.0" cy="267.6" r="4.5"/><circle class="pt" cx="141.2" cy="260.0" r="4.5"/><circle class="pt" cx="157.4" cy="234.9" r="4.5"/><circle class="q4" cx="173.6" cy="171.6" r="6.5"/><circle class="pt" cx="189.8" cy="260.0" r="4.5"/><circle class="pt" cx="206.0" cy="253.1" r="4.5"/><circle class="pt" cx="222.2" cy="234.0" r="4.5"/><circle class="q4" cx="238.5" cy="165.0" r="6.5"/><circle class="pt" cx="254.7" cy="257.7" r="4.5"/><circle class="pt" cx="270.9" cy="249.5" r="4.5"/><circle class="pt" cx="287.1" cy="211.2" r="4.5"/><circle class="q4" cx="303.3" cy="146.8" r="6.5"/><circle class="pt" cx="319.5" cy="241.9" r="4.5"/><circle class="pt" cx="335.8" cy="230.0" r="4.5"/><circle class="pt" cx="352.0" cy="192.1" r="4.5"/><circle class="q4" cx="368.2" cy="123.7" r="6.5"/><circle class="pt" cx="384.4" cy="227.4" r="4.5"/><circle class="pt" cx="400.6" cy="213.8" r="4.5"/><circle class="pt" cx="416.8" cy="173.9" r="4.5"/><circle class="q4" cx="433.0" cy="87.1" r="6.5"/></svg><figcaption>점: 실제 값 · 실선: 적합값 · 점선: 7년차 예측</figcaption></figure>
+</div>
+<p class="foot">주황: t = 5의 입력, 테두리: t = 5의 출력 · lag k: k기간 전의 값 · t = 1~4는 직전 4개 값이 모자라 학습용 데이터에서 빠짐</p></div><p class="pg">9 / 19</p></section><section class="slide " data-title="자기회귀 모형의 예측"><p class="kick">모델링</p><h2>자기회귀 모형의 예측</h2><div class="body">
+<div class="split s3">
+  <div class="tcol"><table class="lt cmp"><tr><th class="">t</th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>4</mn></mrow></msub></mrow></math><span class="hsub">lag 4</span></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>3</mn></mrow></msub></mrow></math><span class="hsub">lag 3</span></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>2</mn></mrow></msub></mrow></math><span class="hsub">lag 2</span></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>1</mn></mrow></msub></mrow></math><span class="hsub">lag 1</span></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub></mrow></math></th><th class="fc">예측</th></tr><tr class=""><td class="">21</td><td class="">56.4</td><td class="">60.0</td><td class="">71.5</td><td class="">92.2</td><td class="">60.8</td><td class="fc">61.8</td></tr><tr class=""><td class="">22</td><td class="">60.0</td><td class="">71.5</td><td class="">92.2</td><td class="">60.8</td><td class="">64.9</td><td class="fc">66.6</td></tr><tr class=""><td class="">23</td><td class="">71.5</td><td class="">92.2</td><td class="">60.8</td><td class="">64.9</td><td class="">77.0</td><td class="fc">79.3</td></tr><tr class=""><td class="">24</td><td class="">92.2</td><td class="">60.8</td><td class="">64.9</td><td class="">77.0</td><td class="">103.3</td><td class="fc">101.4</td></tr><tr class="fut"><td class="">25</td><td class="">60.8</td><td class="">64.9</td><td class="">77.0</td><td class="">103.3</td><td class="">?</td><td class="fc">68.9</td></tr><tr class="fut"><td class="">26</td><td class="">64.9</td><td class="">77.0</td><td class="">103.3</td><td class="fcin">68.9</td><td class="">?</td><td class="fc">74.6</td></tr><tr class="fut"><td class="">27</td><td class="">77.0</td><td class="">103.3</td><td class="fcin">68.9</td><td class="fcin">74.6</td><td class="">?</td><td class="fc">88.4</td></tr><tr class="fut"><td class="">28</td><td class="">103.3</td><td class="fcin">68.9</td><td class="fcin">74.6</td><td class="fcin">88.4</td><td class="">?</td><td class="fc">117.0</td></tr></table><p class="note">파랑: 실제 값 대신 입력으로 넣은 앞 기간의 예측값</p></div>
+  <ul class="lst sm">
+    <li>자기회귀 모형은 직전 4개 기간의 값을 알아야 다음 기간의 값을 예측할 수 있음</li>
+    <li>t = 25의 입력은 t = 21~24의 실제 값이므로 바로 예측할 수 있음</li>
+    <li>t = 26부터는 입력에 아직 관측하지 않은 값이 들어가므로, 그 자리에 앞에서 계산한 예측값을 넣음
+      <ul><li>t = 26의 입력 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mn>25</mn></mrow></msub></mrow></math> 자리에 t = 25의 예측값 68.9을 넣어 74.6을 얻음</li></ul></li>
+    <li>이처럼 예측값을 다시 입력으로 쓰며 한 기간씩 앞으로 나아가는 방식을 다단계 예측(recursive forecasting)이라 함</li>
+  </ul>
+</div></div><p class="pg">10 / 19</p></section><section class="slide " data-title="계절 자기회귀"><p class="kick">모델링</p><h2>계절 자기회귀</h2><div class="body">
+<div class="def"><b>계절 자기회귀</b>한 주기 전 같은 계절의 값 하나만 설명 변수로 쓰는 자기회귀</div>
+<div class="def"><b>학습할 회귀식</b><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>&#x0003D;</mo><msub><mi>&#x003B2;</mi><mn>0</mn></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>1</mn></msub><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>4</mn></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B5;</mi><mi>t</mi></msub></mrow></math></div>
+<div class="xform x3 x2">
+  <div class="tcol"><p class="tcap">학습용 데이터셋 (20개, t = 5~24)</p><table class="lt cmp"><tr><th></th><th class="grp new">입력</th><th class="grp">출력</th></tr><tr><th class="">t</th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mrow><mi>t</mi><mo>&#x02212;</mo><mn>4</mn></mrow></msub></mrow></math><span class="hsub">lag 4</span></th><th class=""><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub></mrow></math></th></tr><tr class=""><td class="">5</td><td class="new hl">50.1</td><td class="yex">48.6</td></tr><tr class=""><td class="">6</td><td class="new">49.3</td><td class="">50.9</td></tr><tr class=""><td class="">7</td><td class="new">57.0</td><td class="">58.5</td></tr><tr class="gap"><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td></tr><tr class=""><td class="">22</td><td class="new">60.0</td><td class="">64.9</td></tr><tr class=""><td class="">23</td><td class="new">71.5</td><td class="">77.0</td></tr><tr class=""><td class="">24</td><td class="new">92.2</td><td class="">103.3</td></tr></table></div>
+  <div class="xarrow">→</div>
+  <figure><p class="tcap">추정한 식의 적합값과 7년차 예측</p><svg viewBox="0 0 720 330" role="img"><line class="grid" x1="52" x2="706" y1="296.0" y2="296.0"/><text class="ax" x="44" y="301.0" text-anchor="end">40</text><line class="grid" x1="52" x2="706" y1="230.0" y2="230.0"/><text class="ax" x="44" y="235.0" text-anchor="end">60</text><line class="grid" x1="52" x2="706" y1="164.0" y2="164.0"/><text class="ax" x="44" y="169.0" text-anchor="end">80</text><line class="grid" x1="52" x2="706" y1="98.0" y2="98.0"/><text class="ax" x="44" y="103.0" text-anchor="end">100</text><text class="ax" x="98.7" y="320" text-anchor="middle">1년차</text><line class="grid" x1="145.4" x2="145.4" y1="32" y2="296"/><text class="ax" x="192.1" y="320" text-anchor="middle">2년차</text><line class="grid" x1="238.9" x2="238.9" y1="32" y2="296"/><text class="ax" x="285.6" y="320" text-anchor="middle">3년차</text><line class="grid" x1="332.3" x2="332.3" y1="32" y2="296"/><text class="ax" x="379.0" y="320" text-anchor="middle">4년차</text><line class="grid" x1="425.7" x2="425.7" y1="32" y2="296"/><text class="ax" x="472.4" y="320" text-anchor="middle">5년차</text><line class="grid" x1="519.1" x2="519.1" y1="32" y2="296"/><text class="ax" x="565.9" y="320" text-anchor="middle">6년차</text><line class="grid" x1="612.6" x2="612.6" y1="32" y2="296"/><text class="ax" x="659.3" y="320" text-anchor="middle">7년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="future" x="612.6" y="32" width="93.4" height="264.0"/><polyline class="fitline" points="157.1,256.0 180.5,259.0 203.8,230.2 227.2,156.3 250.5,261.6 273.9,253.0 297.2,224.6 320.6,152.9 344.0,253.0 367.3,245.2 390.7,223.5 414.0,145.4 437.4,250.4 460.8,241.1 484.1,197.7 507.5,124.9 530.8,232.5 554.2,219.0 577.5,176.1 600.9,98.7"/><polyline class="fc" points="600.9,98.7 624.2,216.0 647.6,200.7 671.0,155.5 694.3,57.3"/><circle class="fcpt" cx="624.2" cy="216.0" r="6.5"/><circle class="fcpt" cx="647.6" cy="200.7" r="6.5"/><circle class="fcpt" cx="671.0" cy="155.5" r="6.5"/><circle class="fcpt" cx="694.3" cy="57.3" r="6.5"/><circle class="pt" cx="63.7" cy="262.7" r="4.5"/><circle class="pt" cx="87.0" cy="265.3" r="4.5"/><circle class="pt" cx="110.4" cy="239.9" r="4.5"/><circle class="q4" cx="133.8" cy="174.6" r="6.5"/><circle class="pt" cx="157.1" cy="267.6" r="4.5"/><circle class="pt" cx="180.5" cy="260.0" r="4.5"/><circle class="pt" cx="203.8" cy="234.9" r="4.5"/><circle class="q4" cx="227.2" cy="171.6" r="6.5"/><circle class="pt" cx="250.5" cy="260.0" r="4.5"/><circle class="pt" cx="273.9" cy="253.1" r="4.5"/><circle class="pt" cx="297.2" cy="234.0" r="4.5"/><circle class="q4" cx="320.6" cy="165.0" r="6.5"/><circle class="pt" cx="344.0" cy="257.7" r="4.5"/><circle class="pt" cx="367.3" cy="249.5" r="4.5"/><circle class="pt" cx="390.7" cy="211.2" r="4.5"/><circle class="q4" cx="414.0" cy="146.8" r="6.5"/><circle class="pt" cx="437.4" cy="241.9" r="4.5"/><circle class="pt" cx="460.8" cy="230.0" r="4.5"/><circle class="pt" cx="484.1" cy="192.1" r="4.5"/><circle class="q4" cx="507.5" cy="123.7" r="6.5"/><circle class="pt" cx="530.8" cy="227.4" r="4.5"/><circle class="pt" cx="554.2" cy="213.8" r="4.5"/><circle class="pt" cx="577.5" cy="173.9" r="4.5"/><circle class="q4" cx="600.9" cy="87.1" r="6.5"/></svg><figcaption>점: 실제 값 · 실선: 적합값 · 점선: 7년차 예측</figcaption></figure>
+</div>
+<p class="foot">주황: t = 5의 입력, 테두리: t = 5의 출력 · lag 4: 4기간 전, 즉 1년 전 같은 분기의 값</p></div><p class="pg">11 / 19</p></section><section class="slide " data-title="선형 추세 모형"><p class="kick">모델링</p><h2>선형 추세 모형</h2><p class="msg">t로 직선을 맞추면 분기마다 매출이 평균 1.17씩 늘어나는 추세를 얻고, 예측은 그 직선을 늘인 값</p><div class="body">
+<div class="eqrow">
+  <div class="eqline"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>&#x0003D;</mo><msub><mi>&#x003B2;</mi><mn>0</mn></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>1</mn></msub><mi>t</mi><mo>&#x0002B;</mo><msub><mi>&#x003B5;</mi><mi>t</mi></msub></mrow></math></div>
+  <div class="eqline res"><math class="dm" xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mi>t</mi></msub><mo>&#x0003D;</mo><mn>50.12</mn><mo>&#x0002B;</mo><mn>1.170</mn><mspace width="0.167em" /><mi>t</mi></mrow></math></div>
+</div>
+<figure class="full"><svg viewBox="0 0 1180 360" role="img"><line class="grid" x1="52" x2="1166" y1="326.0" y2="326.0"/><text class="ax" x="44" y="331.0" text-anchor="end">40</text><line class="grid" x1="52" x2="1166" y1="242.0" y2="242.0"/><text class="ax" x="44" y="247.0" text-anchor="end">60</text><line class="grid" x1="52" x2="1166" y1="158.0" y2="158.0"/><text class="ax" x="44" y="163.0" text-anchor="end">80</text><line class="grid" x1="52" x2="1166" y1="74.0" y2="74.0"/><text class="ax" x="44" y="79.0" text-anchor="end">100</text><text class="ax" x="131.6" y="350" text-anchor="middle">1년차</text><line class="grid" x1="211.1" x2="211.1" y1="32" y2="326"/><text class="ax" x="290.7" y="350" text-anchor="middle">2년차</text><line class="grid" x1="370.3" x2="370.3" y1="32" y2="326"/><text class="ax" x="449.9" y="350" text-anchor="middle">3년차</text><line class="grid" x1="529.4" x2="529.4" y1="32" y2="326"/><text class="ax" x="609.0" y="350" text-anchor="middle">4년차</text><line class="grid" x1="688.6" x2="688.6" y1="32" y2="326"/><text class="ax" x="768.1" y="350" text-anchor="middle">5년차</text><line class="grid" x1="847.7" x2="847.7" y1="32" y2="326"/><text class="ax" x="927.3" y="350" text-anchor="middle">6년차</text><line class="grid" x1="1006.9" x2="1006.9" y1="32" y2="326"/><text class="ax" x="1086.4" y="350" text-anchor="middle">7년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="future" x="1006.9" y="32" width="159.1" height="294.0"/><polyline class="fitline" points="71.9,278.6 111.7,273.7 151.5,268.7 191.2,263.8 231.0,258.9 270.8,254.0 310.6,249.1 350.4,244.2 390.2,239.3 430.0,234.3 469.8,229.4 509.5,224.5 549.3,219.6 589.1,214.7 628.9,209.8 668.7,204.8 708.5,199.9 748.2,195.0 788.0,190.1 827.8,185.2 867.6,180.3 907.4,175.4 947.2,170.4 987.0,165.5"/><polyline class="fc" points="987.0,165.5 1026.8,160.6 1066.5,155.7 1106.3,150.8 1146.1,145.9"/><circle class="fcpt" cx="1026.8" cy="160.6" r="6.5"/><circle class="fcpt" cx="1066.5" cy="155.7" r="6.5"/><circle class="fcpt" cx="1106.3" cy="150.8" r="6.5"/><circle class="fcpt" cx="1146.1" cy="145.9" r="6.5"/><circle class="pt" cx="71.9" cy="283.6" r="4.5"/><circle class="pt" cx="111.7" cy="286.9" r="4.5"/><circle class="pt" cx="151.5" cy="254.6" r="4.5"/><circle class="q4" cx="191.2" cy="171.4" r="6.5"/><circle class="pt" cx="231.0" cy="289.9" r="4.5"/><circle class="pt" cx="270.8" cy="280.2" r="4.5"/><circle class="pt" cx="310.6" cy="248.3" r="4.5"/><circle class="q4" cx="350.4" cy="167.7" r="6.5"/><circle class="pt" cx="390.2" cy="280.2" r="4.5"/><circle class="pt" cx="430.0" cy="271.4" r="4.5"/><circle class="pt" cx="469.8" cy="247.0" r="4.5"/><circle class="q4" cx="509.5" cy="159.3" r="6.5"/><circle class="pt" cx="549.3" cy="277.3" r="4.5"/><circle class="pt" cx="589.1" cy="266.8" r="4.5"/><circle class="pt" cx="628.9" cy="218.1" r="4.5"/><circle class="q4" cx="668.7" cy="136.2" r="6.5"/><circle class="pt" cx="708.5" cy="257.1" r="4.5"/><circle class="pt" cx="748.2" cy="242.0" r="4.5"/><circle class="pt" cx="788.0" cy="193.7" r="4.5"/><circle class="q4" cx="827.8" cy="106.8" r="6.5"/><circle class="pt" cx="867.6" cy="238.6" r="4.5"/><circle class="pt" cx="907.4" cy="221.4" r="4.5"/><circle class="pt" cx="947.2" cy="170.6" r="4.5"/><circle class="q4" cx="987.0" cy="60.1" r="6.5"/><text class="lab model" x="549.3" y="259.6" text-anchor="middle">적합 직선</text><text class="lab model" x="1086.4" y="179.9" text-anchor="middle">직선을 늘인 예측</text></svg><figcaption>점: 실제 값 · 실선: 24분기 전체로 맞춘 직선, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>&#x003B2;</mi><mn>1</mn></msub><mo>&#x0003D;</mo><mn>1.170</mn></mrow></math>: 한 분기가 지날 때마다 평균 1.17 증가 · 점선: 같은 직선을 7년차로 늘인 예측</figcaption></figure><p class="take">7년차 예측 79.4, 80.5, 81.7, 82.9 · 맞춘 직선을 늘인 값이라 분기마다 1.17씩 늘어남</p></div><p class="pg">12 / 19</p></section><section class="slide " data-title="추세·계절성 회귀"><p class="kick">모델링</p><h2>추세·계절성 회귀</h2><div class="body">
+<div class="def"><b>추세·계절성 회귀</b>시점 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>t</mi></mrow></math>와 계절을 설명 변수로, 그 기간의 값을 결과 변수로 두는 회귀</div>
+<div class="def"><b>학습할 회귀식</b><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>&#x0003D;</mo><msub><mi>&#x003B2;</mi><mn>0</mn></msub><mo>&#x0002B;</mo><msub><mi>&#x003B2;</mi><mn>1</mn></msub><mi>t</mi><mo>&#x0002B;</mo><msub><mi>&#x003B3;</mi><mn>2</mn></msub><msub><mi>D</mi><mrow><mn>2</mn><mo>&#x0002C;</mo><mi>t</mi></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B3;</mi><mn>3</mn></msub><msub><mi>D</mi><mrow><mn>3</mn><mo>&#x0002C;</mo><mi>t</mi></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B3;</mi><mn>4</mn></msub><msub><mi>D</mi><mrow><mn>4</mn><mo>&#x0002C;</mo><mi>t</mi></mrow></msub><mo>&#x0002B;</mo><msub><mi>&#x003B5;</mi><mi>t</mi></msub></mrow></math></div>
+<div class="def"><b>모델링 전략</b>추세는 시점 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>t</mi></mrow></math>로 나타내고, 계절은 분기를 원핫 인코딩한 뒤 기준 계절(1분기) 열을 뺀 0/1 변수 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>D</mi><mn>2</mn></msub><mo>&#x0002C;</mo><msub><mi>D</mi><mn>3</mn></msub><mo>&#x0002C;</mo><msub><mi>D</mi><mn>4</mn></msub></mrow></math>로 나타냄</div>
+<div class="xform x3 x2 x16">
+  <div class="tcol"><p class="tcap">학습용 데이터셋 (24개, t = 1~24)</p><table class="lt cmp"><tr><th class="grp new" colspan="4">입력</th><th class="grp">출력</th></tr><tr><th class="new">t</th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>D</mi><mn>2</mn></msub></mrow></math></th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>D</mi><mn>3</mn></msub></mrow></math></th><th class="new"><math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>D</mi><mn>4</mn></msub></mrow></math></th><th class="">y</th></tr><tr class=""><td class="new">1</td><td class="new">0</td><td class="new">0</td><td class="new">0</td><td class="">50.1</td></tr><tr class=""><td class="new">2</td><td class="new">1</td><td class="new">0</td><td class="new">0</td><td class="">49.3</td></tr><tr class="gap"><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td><td class="">⋮</td></tr><tr class=""><td class="new">24</td><td class="new">0</td><td class="new">0</td><td class="new">1</td><td class="">103.3</td></tr><tr class="fut"><td class="new">25</td><td class="new">0</td><td class="new">0</td><td class="new">0</td><td class="">?</td></tr><tr class="fut"><td class="new">26</td><td class="new">1</td><td class="new">0</td><td class="new">0</td><td class="">?</td></tr><tr class="fut"><td class="new">27</td><td class="new">0</td><td class="new">1</td><td class="new">0</td><td class="">?</td></tr><tr class="fut"><td class="new">28</td><td class="new">0</td><td class="new">0</td><td class="new">1</td><td class="">?</td></tr></table></div>
+  <div class="xarrow">→</div>
+  <figure><p class="tcap">추정한 식의 적합값과 7년차 예측</p><svg viewBox="0 0 720 330" role="img"><line class="grid" x1="52" x2="706" y1="296.0" y2="296.0"/><text class="ax" x="44" y="301.0" text-anchor="end">40</text><line class="grid" x1="52" x2="706" y1="230.0" y2="230.0"/><text class="ax" x="44" y="235.0" text-anchor="end">60</text><line class="grid" x1="52" x2="706" y1="164.0" y2="164.0"/><text class="ax" x="44" y="169.0" text-anchor="end">80</text><line class="grid" x1="52" x2="706" y1="98.0" y2="98.0"/><text class="ax" x="44" y="103.0" text-anchor="end">100</text><text class="ax" x="98.7" y="320" text-anchor="middle">1년차</text><line class="grid" x1="145.4" x2="145.4" y1="32" y2="296"/><text class="ax" x="192.1" y="320" text-anchor="middle">2년차</text><line class="grid" x1="238.9" x2="238.9" y1="32" y2="296"/><text class="ax" x="285.6" y="320" text-anchor="middle">3년차</text><line class="grid" x1="332.3" x2="332.3" y1="32" y2="296"/><text class="ax" x="379.0" y="320" text-anchor="middle">4년차</text><line class="grid" x1="425.7" x2="425.7" y1="32" y2="296"/><text class="ax" x="472.4" y="320" text-anchor="middle">5년차</text><line class="grid" x1="519.1" x2="519.1" y1="32" y2="296"/><text class="ax" x="565.9" y="320" text-anchor="middle">6년차</text><line class="grid" x1="612.6" x2="612.6" y1="32" y2="296"/><text class="ax" x="659.3" y="320" text-anchor="middle">7년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="future" x="612.6" y="32" width="93.4" height="264.0"/><polyline class="fitline" points="63.7,283.0 87.0,275.4 110.4,244.5 133.8,174.9 157.1,271.0 180.5,263.4 203.8,232.4 227.2,162.9 250.5,258.9 273.9,251.3 297.2,220.4 320.6,150.8 344.0,246.9 367.3,239.3 390.7,208.3 414.0,138.8 437.4,234.8 460.8,227.2 484.1,196.2 507.5,126.7 530.8,222.7 554.2,215.2 577.5,184.2 600.9,114.7"/><polyline class="fc" points="600.9,114.7 624.2,210.7 647.6,203.1 671.0,172.1 694.3,102.6"/><circle class="fcpt" cx="624.2" cy="210.7" r="6.5"/><circle class="fcpt" cx="647.6" cy="203.1" r="6.5"/><circle class="fcpt" cx="671.0" cy="172.1" r="6.5"/><circle class="fcpt" cx="694.3" cy="102.6" r="6.5"/><circle class="pt" cx="63.7" cy="262.7" r="4.5"/><circle class="pt" cx="87.0" cy="265.3" r="4.5"/><circle class="pt" cx="110.4" cy="239.9" r="4.5"/><circle class="q4" cx="133.8" cy="174.6" r="6.5"/><circle class="pt" cx="157.1" cy="267.6" r="4.5"/><circle class="pt" cx="180.5" cy="260.0" r="4.5"/><circle class="pt" cx="203.8" cy="234.9" r="4.5"/><circle class="q4" cx="227.2" cy="171.6" r="6.5"/><circle class="pt" cx="250.5" cy="260.0" r="4.5"/><circle class="pt" cx="273.9" cy="253.1" r="4.5"/><circle class="pt" cx="297.2" cy="234.0" r="4.5"/><circle class="q4" cx="320.6" cy="165.0" r="6.5"/><circle class="pt" cx="344.0" cy="257.7" r="4.5"/><circle class="pt" cx="367.3" cy="249.5" r="4.5"/><circle class="pt" cx="390.7" cy="211.2" r="4.5"/><circle class="q4" cx="414.0" cy="146.8" r="6.5"/><circle class="pt" cx="437.4" cy="241.9" r="4.5"/><circle class="pt" cx="460.8" cy="230.0" r="4.5"/><circle class="pt" cx="484.1" cy="192.1" r="4.5"/><circle class="q4" cx="507.5" cy="123.7" r="6.5"/><circle class="pt" cx="530.8" cy="227.4" r="4.5"/><circle class="pt" cx="554.2" cy="213.8" r="4.5"/><circle class="pt" cx="577.5" cy="173.9" r="4.5"/><circle class="q4" cx="600.9" cy="87.1" r="6.5"/></svg><figcaption>점: 실제 값 · 실선: 적합값 · 점선: 7년차 예측</figcaption></figure>
+</div>
+<p class="foot">t: 기간마다 1씩 늘어나는 시점 번호 · t = 25~28: 미래 기간, t와 D는 미리 정해져 있음</p></div><p class="pg">13 / 19</p></section><section class="slide " data-title="학습 기간과 테스트 기간"><p class="kick">평가</p><h2>학습 기간과 테스트 기간</h2><div class="body">
+<ul class="lst sm">
+  <li>예측 방법이 좋은지는 아직 관측하지 않은 미래의 값을 얼마나 잘 맞히는지로 판단해야 함</li>
+  <li>하지만 미래의 값은 아직 없으므로, 가지고 있는 자료의 마지막 기간을 미래처럼 떼어 두고 평가함
+    <ul>
+      <li>학습 기간(training): 앞부분의 자료, 모형을 추정하는 데 씀</li>
+      <li>테스트 기간(test): 마지막 부분의 자료, 학습 기간으로 만든 예측값과 실제 값을 비교하는 데 씀</li>
+    </ul></li>
+  <li>자료는 무작위로 나누지 않고, 연·분기 같은 적절한 시간 단위로 끊어 시간 순서대로 나눔(temporal split)</li>
+</ul>
+<figure class="full"><svg viewBox="0 0 1180 360" role="img"><line class="grid" x1="52" x2="1166" y1="326.0" y2="326.0"/><text class="ax" x="44" y="331.0" text-anchor="end">40</text><line class="grid" x1="52" x2="1166" y1="242.0" y2="242.0"/><text class="ax" x="44" y="247.0" text-anchor="end">60</text><line class="grid" x1="52" x2="1166" y1="158.0" y2="158.0"/><text class="ax" x="44" y="163.0" text-anchor="end">80</text><line class="grid" x1="52" x2="1166" y1="74.0" y2="74.0"/><text class="ax" x="44" y="79.0" text-anchor="end">100</text><text class="ax" x="144.8" y="350" text-anchor="middle">1년차</text><line class="grid" x1="237.7" x2="237.7" y1="32" y2="326"/><text class="ax" x="330.5" y="350" text-anchor="middle">2년차</text><line class="grid" x1="423.3" x2="423.3" y1="32" y2="326"/><text class="ax" x="516.2" y="350" text-anchor="middle">3년차</text><line class="grid" x1="609.0" x2="609.0" y1="32" y2="326"/><text class="ax" x="701.8" y="350" text-anchor="middle">4년차</text><line class="grid" x1="794.7" x2="794.7" y1="32" y2="326"/><text class="ax" x="887.5" y="350" text-anchor="middle">5년차</text><line class="grid" x1="980.3" x2="980.3" y1="32" y2="326"/><text class="ax" x="1073.2" y="350" text-anchor="middle">6년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="train" x="52.0" y="32" width="928.3" height="294.0"/><text class="bandlab" x="516.2" y="52" text-anchor="middle">학습 기간: 1~5년차 20분기</text><rect class="test" x="980.3" y="32" width="185.7" height="294.0"/><text class="bandlab" x="1073.2" y="52" text-anchor="middle">테스트 기간: 6년차</text><polyline class="ser" points="75.2,283.6 121.6,286.9 168.0,254.6 214.5,171.4 260.9,289.9 307.3,280.2 353.7,248.3 400.1,167.7 446.5,280.2 493.0,271.4 539.4,247.0 585.8,159.3 632.2,277.3 678.6,266.8 725.0,218.1 771.5,136.2 817.9,257.1 864.3,242.0 910.7,193.7 957.1,106.8 1003.5,238.6 1050.0,221.4 1096.4,170.6 1142.8,60.1"/><circle class="pt" cx="75.2" cy="283.6" r="4.5"/><circle class="pt" cx="121.6" cy="286.9" r="4.5"/><circle class="pt" cx="168.0" cy="254.6" r="4.5"/><circle class="q4" cx="214.5" cy="171.4" r="6.5"/><circle class="pt" cx="260.9" cy="289.9" r="4.5"/><circle class="pt" cx="307.3" cy="280.2" r="4.5"/><circle class="pt" cx="353.7" cy="248.3" r="4.5"/><circle class="q4" cx="400.1" cy="167.7" r="6.5"/><circle class="pt" cx="446.5" cy="280.2" r="4.5"/><circle class="pt" cx="493.0" cy="271.4" r="4.5"/><circle class="pt" cx="539.4" cy="247.0" r="4.5"/><circle class="q4" cx="585.8" cy="159.3" r="6.5"/><circle class="pt" cx="632.2" cy="277.3" r="4.5"/><circle class="pt" cx="678.6" cy="266.8" r="4.5"/><circle class="pt" cx="725.0" cy="218.1" r="4.5"/><circle class="q4" cx="771.5" cy="136.2" r="6.5"/><circle class="pt" cx="817.9" cy="257.1" r="4.5"/><circle class="pt" cx="864.3" cy="242.0" r="4.5"/><circle class="pt" cx="910.7" cy="193.7" r="4.5"/><circle class="q4" cx="957.1" cy="106.8" r="6.5"/><circle class="pt" cx="1003.5" cy="238.6" r="4.5"/><circle class="pt" cx="1050.0" cy="221.4" r="4.5"/><circle class="pt" cx="1096.4" cy="170.6" r="4.5"/><circle class="q4" cx="1142.8" cy="60.1" r="6.5"/></svg></figure></div><p class="pg">14 / 19</p></section><section class="slide " data-title="예측 오차와 평가 지표"><p class="kick">평가</p><h2>예측 오차와 평가 지표</h2><div class="body">
+<ul class="lst">
+    <li>예측 오차: 테스트 기간 각 시점의 실제 값에서 예측값을 뺀 값 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mi>e</mi><mi>t</mi></msub><mo>&#x0003D;</mo><msub><mi>y</mi><mi>t</mi></msub><mo>&#x02212;</mo><msub><mover accent="true"><mrow><mi>y</mi></mrow><mo>&#x0005E;</mo></mover><mi>t</mi></msub></mrow></math></li>
+    <li>테스트 기간 전체의 오차를 하나의 숫자로 요약하여 방법끼리 비교함
+      <ul>
+        <li>MSE: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mfrac><mrow><mn>1</mn></mrow><mrow><mi>m</mi></mrow></mfrac><mo>&#x02211;</mo><msubsup><mi>e</mi><mi>t</mi><mn>2</mn></msubsup></mrow></math>, <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>m</mi></mrow></math>은 테스트 기간의 길이</li>
+        <li>MAPE: <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mfrac><mrow><mn>100</mn></mrow><mrow><mi>m</mi></mrow></mfrac><mo>&#x02211;</mo><mrow><mo stretchy="true" fence="true" form="prefix">&#x0007C;</mo><mfrac><mrow><msub><mi>e</mi><mi>t</mi></msub></mrow><mrow><msub><mi>y</mi><mi>t</mi></msub></mrow></mfrac><mo stretchy="true" fence="true" form="postfix">&#x0007C;</mo></mrow></mrow></math>, 오차를 실제 값 대비 %로 나타내어 단위가 다른 자료끼리도 비교할 수 있음</li>
+      </ul></li>
+    <li>예: seasonal naive 예측의 6년차 오차 4.4, 4.9, 5.5, 11.1로 계산하면 MSE 49.21, MAPE 8.17%</li>
+  </ul></div><p class="pg">15 / 19</p></section><section class="slide " data-title="학습 오차와 테스트 오차"><p class="kick">평가</p><h2>학습 오차와 테스트 오차</h2><div class="body">
+<ul class="lst sm">
+  <li>학습 오차(training error): 모형을 추정한 학습 기간에서 실제 값과 적합값으로 계산한 오차</li>
+  <li>테스트 오차(test error): 추정에 쓰지 않은 테스트 기간에서 실제 값과 예측값으로 계산한 오차</li>
+  <li>학습 오차는 모형이 이미 본 자료로 계산하므로 작게 나오기 쉬움. 따라서 방법은 테스트 오차로 비교함</li>
+</ul>
+<figure class="full"><svg viewBox="0 0 1180 380" role="img"><line class="grid" x1="52" x2="1166" y1="316.6" y2="316.6"/><text class="ax" x="44" y="321.6" text-anchor="end">50</text><line class="grid" x1="52" x2="1166" y1="218.4" y2="218.4"/><text class="ax" x="44" y="223.4" text-anchor="end">70</text><line class="grid" x1="52" x2="1166" y1="120.3" y2="120.3"/><text class="ax" x="44" y="125.3" text-anchor="end">90</text><text class="ax" x="144.8" y="370" text-anchor="middle">1년차</text><line class="grid" x1="237.7" x2="237.7" y1="32" y2="346"/><text class="ax" x="330.5" y="370" text-anchor="middle">2년차</text><line class="grid" x1="423.3" x2="423.3" y1="32" y2="346"/><text class="ax" x="516.2" y="370" text-anchor="middle">3년차</text><line class="grid" x1="609.0" x2="609.0" y1="32" y2="346"/><text class="ax" x="701.8" y="370" text-anchor="middle">4년차</text><line class="grid" x1="794.7" x2="794.7" y1="32" y2="346"/><text class="ax" x="887.5" y="370" text-anchor="middle">5년차</text><line class="grid" x1="980.3" x2="980.3" y1="32" y2="346"/><text class="ax" x="1073.2" y="370" text-anchor="middle">6년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="train" x="52.0" y="32" width="928.3" height="314.0"/><text class="bandlab" x="516.2" y="52" text-anchor="middle">학습 기간</text><rect class="test" x="980.3" y="32" width="185.7" height="314.0"/><text class="bandlab" x="1073.2" y="52" text-anchor="middle">테스트 기간</text><text class="lab model" x="516.2" y="76.2" text-anchor="middle">학습 MAPE 1.92%</text><text class="lab model" x="1073.2" y="336.2" text-anchor="middle">테스트 MAPE 5.79%</text><line class="errline" x1="260.9" x2="260.9" y1="323.4" y2="314.6"/><line class="errline" x1="307.3" x2="307.3" y1="312.1" y2="316.2"/><line class="errline" x1="353.7" x2="353.7" y1="274.9" y2="274.5"/><line class="errline" x1="400.1" x2="400.1" y1="180.7" y2="178.5"/><line class="errline" x1="446.5" x2="446.5" y1="312.1" y2="320.1"/><line class="errline" x1="493.0" x2="493.0" y1="301.8" y2="303.4"/><line class="errline" x1="539.4" x2="539.4" y1="273.4" y2="261.9"/><line class="errline" x1="585.8" x2="585.8" y1="170.8" y2="169.4"/><line class="errline" x1="632.2" x2="632.2" y1="308.7" y2="303.4"/><line class="errline" x1="678.6" x2="678.6" y1="296.4" y2="289.0"/><line class="errline" x1="725.0" x2="725.0" y1="239.5" y2="257.2"/><line class="errline" x1="771.5" x2="771.5" y1="143.9" y2="151.8"/><line class="errline" x1="817.9" x2="817.9" y1="285.2" y2="289.4"/><line class="errline" x1="864.3" x2="864.3" y1="267.5" y2="269.2"/><line class="errline" x1="910.7" x2="910.7" y1="211.1" y2="204.9"/><line class="errline" x1="957.1" x2="957.1" y1="109.5" y2="107.5"/><line class="errline" x1="1003.5" x2="1003.5" y1="263.6" y2="247.4"/><line class="errline" x1="1050.0" x2="1050.0" y1="243.5" y2="219.5"/><line class="errline" x1="1096.4" x2="1096.4" y1="184.1" y2="152.9"/><line class="errline" x1="1142.8" x2="1142.8" y1="55.1" y2="44.9"/><polyline class="ser" points="75.2,316.1 121.6,320.0 168.0,282.2 214.5,185.1 260.9,323.4 307.3,312.1 353.7,274.9 400.1,180.7 446.5,312.1 493.0,301.8 539.4,273.4 585.8,170.8 632.2,308.7 678.6,296.4 725.0,239.5 771.5,143.9 817.9,285.2 864.3,267.5 910.7,211.1 957.1,109.5 1003.5,263.6 1050.0,243.5 1096.4,184.1 1142.8,55.1"/><polyline class="trfit" points="260.9,314.6 307.3,316.2 353.7,274.5 400.1,178.5 446.5,320.1 493.0,303.4 539.4,261.9 585.8,169.4 632.2,303.4 678.6,289.0 725.0,257.2 771.5,151.8 817.9,289.4 864.3,269.2 910.7,204.9 957.1,107.5"/><circle class="trpt" cx="260.9" cy="314.6" r="5"/><circle class="trpt" cx="307.3" cy="316.2" r="5"/><circle class="trpt" cx="353.7" cy="274.5" r="5"/><circle class="trpt" cx="400.1" cy="178.5" r="5"/><circle class="trpt" cx="446.5" cy="320.1" r="5"/><circle class="trpt" cx="493.0" cy="303.4" r="5"/><circle class="trpt" cx="539.4" cy="261.9" r="5"/><circle class="trpt" cx="585.8" cy="169.4" r="5"/><circle class="trpt" cx="632.2" cy="303.4" r="5"/><circle class="trpt" cx="678.6" cy="289.0" r="5"/><circle class="trpt" cx="725.0" cy="257.2" r="5"/><circle class="trpt" cx="771.5" cy="151.8" r="5"/><circle class="trpt" cx="817.9" cy="289.4" r="5"/><circle class="trpt" cx="864.3" cy="269.2" r="5"/><circle class="trpt" cx="910.7" cy="204.9" r="5"/><circle class="trpt" cx="957.1" cy="107.5" r="5"/><polyline class="fc" points="1003.5,247.4 1050.0,219.5 1096.4,152.9 1142.8,44.9"/><circle class="fcpt" cx="1003.5" cy="247.4" r="6"/><circle class="fcpt" cx="1050.0" cy="219.5" r="6"/><circle class="fcpt" cx="1096.4" cy="152.9" r="6"/><circle class="fcpt" cx="1142.8" cy="44.9" r="6"/><circle class="pt" cx="75.2" cy="316.1" r="4.5"/><circle class="pt" cx="121.6" cy="320.0" r="4.5"/><circle class="pt" cx="168.0" cy="282.2" r="4.5"/><circle class="q4" cx="214.5" cy="185.1" r="6.5"/><circle class="pt" cx="260.9" cy="323.4" r="4.5"/><circle class="pt" cx="307.3" cy="312.1" r="4.5"/><circle class="pt" cx="353.7" cy="274.9" r="4.5"/><circle class="q4" cx="400.1" cy="180.7" r="6.5"/><circle class="pt" cx="446.5" cy="312.1" r="4.5"/><circle class="pt" cx="493.0" cy="301.8" r="4.5"/><circle class="pt" cx="539.4" cy="273.4" r="4.5"/><circle class="q4" cx="585.8" cy="170.8" r="6.5"/><circle class="pt" cx="632.2" cy="308.7" r="4.5"/><circle class="pt" cx="678.6" cy="296.4" r="4.5"/><circle class="pt" cx="725.0" cy="239.5" r="4.5"/><circle class="q4" cx="771.5" cy="143.9" r="6.5"/><circle class="pt" cx="817.9" cy="285.2" r="4.5"/><circle class="pt" cx="864.3" cy="267.5" r="4.5"/><circle class="pt" cx="910.7" cy="211.1" r="4.5"/><circle class="q4" cx="957.1" cy="109.5" r="6.5"/><circle class="pt" cx="1003.5" cy="263.6" r="4.5"/><circle class="pt" cx="1050.0" cy="243.5" r="4.5"/><circle class="pt" cx="1096.4" cy="184.1" r="4.5"/><circle class="q4" cx="1142.8" cy="55.1" r="6.5"/><line class="ser" x1="84.5" x2="118.5" y1="51.6" y2="51.6"/><text class="lab" x="126.5" y="56.6" text-anchor="start">실제 값</text><line class="trfit" x1="84.5" x2="118.5" y1="73.6" y2="73.6"/><text class="lab" x="126.5" y="78.6" text-anchor="start">학습 기간의 적합값</text><line class="fc" x1="84.5" x2="118.5" y1="95.6" y2="95.6"/><text class="lab" x="126.5" y="100.6" text-anchor="start">테스트 기간의 예측값</text></svg><figcaption>예: 1~5년차로 추정한 자기회귀 AR(4) · 빨간 세로선: 실제 값과의 차이(오차)</figcaption></figure></div><p class="pg">16 / 19</p></section><section class="slide " data-title="테스트 오차로 방법 선택"><p class="kick">평가</p><h2>테스트 오차로 방법 선택</h2><div class="body">
+<ul class="lst sm">
+  <li>테스트 오차가 가장 작은 방법을 고름</li>
+  <li>예시에서는 계절 자기회귀의 테스트 MAPE가 3.39%로 가장 작음</li>
+</ul>
+<figure class="full"><svg viewBox="0 0 1180 308" role="img"><line class="grid" x1="250.0" x2="250.0" y1="10" y2="278"/><text class="ax" x="250.0" y="300" text-anchor="middle">0%</text><line class="grid" x1="467.1" x2="467.1" y1="10" y2="278"/><text class="ax" x="467.1" y="300" text-anchor="middle">10%</text><line class="grid" x1="684.3" x2="684.3" y1="10" y2="278"/><text class="ax" x="684.3" y="300" text-anchor="middle">20%</text><line class="grid" x1="901.4" x2="901.4" y1="10" y2="278"/><text class="ax" x="901.4" y="300" text-anchor="middle">30%</text><text class="name" x="234" y="39" text-anchor="end">계절 자기회귀</text><rect class="bar good" x="250" y="18" width="73.5" height="30" rx="2"/><text class="val" x="333.5" y="39">3.39%</text><text class="name" x="234" y="83" text-anchor="end">자기회귀 AR(4)</text><rect class="bar" x="250" y="62" width="125.8" height="30" rx="2"/><text class="val" x="385.8" y="83">5.79%</text><text class="name" x="234" y="127" text-anchor="end">선형 추세 + 계절성 모형</text><rect class="bar" x="250" y="106" width="137.8" height="30" rx="2"/><text class="val" x="397.8" y="127">6.35%</text><text class="name" x="234" y="171" text-anchor="end">seasonal naive 예측</text><rect class="bar" x="250" y="150" width="177.4" height="30" rx="2"/><text class="val" x="437.4" y="171">8.17%</text><text class="name" x="234" y="215" text-anchor="end">선형 추세 모형</text><rect class="bar" x="250" y="194" width="344.3" height="30" rx="2"/><text class="val" x="604.3" y="215">15.86%</text><text class="name" x="234" y="259" text-anchor="end">naive 예측</text><rect class="bar" x="250" y="238" width="674.2" height="30" rx="2"/><text class="val" x="934.2" y="259">31.05%</text></svg><figcaption>학습 기간 1~5년차, 테스트 기간 6년차의 테스트 MAPE</figcaption></figure></div><p class="pg">17 / 19</p></section><section class="slide " data-title="예측 기간(forecast horizon)이 길어지면"><p class="kick">평가</p><h2>예측 기간(forecast horizon)이 길어지면</h2><div class="body">
+<ul class="lst sm">
+  <li>예측 기간(forecast horizon): 마지막 관측 시점에서 몇 기간 뒤까지 예측하는지를 나타내는 길이 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><mi>h</mi></mrow></math></li>
+  <li>예측 기간이 길어질수록 예측 오차가 커짐
+    <ul>
+      <li>자기회귀는 두 기간 이상 앞을 예측할 때 앞 기간의 예측값을 다시 입력으로 쓰므로 오차가 쌓임</li>
+      <li>추세·계절성 회귀는 추정한 추세가 앞으로도 그대로 이어진다고 가정하므로, 멀리 갈수록 실제 값과 벌어질 수 있음</li>
+    </ul></li>
+  <li>테스트 기간에서 비슷하게 맞힌 방법들도 그보다 먼 미래에서는 예측이 크게 달라질 수 있음</li>
+</ul>
+<figure class="full"><svg viewBox="0 0 1180 300" role="img"><line class="grid" x1="52" x2="1166" y1="266.0" y2="266.0"/><text class="ax" x="44" y="271.0" text-anchor="end">40</text><line class="grid" x1="52" x2="1166" y1="199.1" y2="199.1"/><text class="ax" x="44" y="204.1" text-anchor="end">80</text><line class="grid" x1="52" x2="1166" y1="132.3" y2="132.3"/><text class="ax" x="44" y="137.3" text-anchor="end">120</text><line class="grid" x1="52" x2="1166" y1="65.4" y2="65.4"/><text class="ax" x="44" y="70.4" text-anchor="end">160</text><text class="ax" x="121.6" y="290" text-anchor="middle">1년차</text><line class="grid" x1="191.2" x2="191.2" y1="32" y2="266"/><text class="ax" x="260.9" y="290" text-anchor="middle">2년차</text><line class="grid" x1="330.5" x2="330.5" y1="32" y2="266"/><text class="ax" x="400.1" y="290" text-anchor="middle">3년차</text><line class="grid" x1="469.8" x2="469.8" y1="32" y2="266"/><text class="ax" x="539.4" y="290" text-anchor="middle">4년차</text><line class="grid" x1="609.0" x2="609.0" y1="32" y2="266"/><text class="ax" x="678.6" y="290" text-anchor="middle">5년차</text><line class="grid" x1="748.2" x2="748.2" y1="32" y2="266"/><text class="ax" x="817.9" y="290" text-anchor="middle">6년차</text><line class="grid" x1="887.5" x2="887.5" y1="32" y2="266"/><text class="ax" x="957.1" y="290" text-anchor="middle">7년차</text><line class="grid" x1="1026.8" x2="1026.8" y1="32" y2="266"/><text class="ax" x="1096.4" y="290" text-anchor="middle">8년차</text><text class="ax" x="44" y="18" text-anchor="end">매출</text><rect class="train" x="52.0" y="32" width="696.2" height="234.0"/><text class="bandlab" x="400.1" y="52" text-anchor="middle">학습 기간</text><rect class="test" x="748.2" y="32" width="139.2" height="234.0"/><text class="bandlab" x="817.9" y="52" text-anchor="middle">테스트 기간</text><polyline class="ser" points="69.4,249.1 104.2,250.5 139.0,237.6 173.8,204.5 208.7,251.6 243.5,247.8 278.3,235.1 313.1,203.0 347.9,247.8 382.7,244.3 417.5,234.6 452.3,199.6 487.2,246.6 522.0,242.4 556.8,223.0 591.6,190.5 626.4,238.6 661.2,232.6 696.0,213.3 730.8,178.8 765.7,231.2 800.5,224.4 835.3,204.2 870.1,160.2"/><circle class="pt" cx="69.4" cy="249.1" r="4.5"/><circle class="pt" cx="104.2" cy="250.5" r="4.5"/><circle class="pt" cx="139.0" cy="237.6" r="4.5"/><circle class="q4" cx="173.8" cy="204.5" r="6.5"/><circle class="pt" cx="208.7" cy="251.6" r="4.5"/><circle class="pt" cx="243.5" cy="247.8" r="4.5"/><circle class="pt" cx="278.3" cy="235.1" r="4.5"/><circle class="q4" cx="313.1" cy="203.0" r="6.5"/><circle class="pt" cx="347.9" cy="247.8" r="4.5"/><circle class="pt" cx="382.7" cy="244.3" r="4.5"/><circle class="pt" cx="417.5" cy="234.6" r="4.5"/><circle class="q4" cx="452.3" cy="199.6" r="6.5"/><circle class="pt" cx="487.2" cy="246.6" r="4.5"/><circle class="pt" cx="522.0" cy="242.4" r="4.5"/><circle class="pt" cx="556.8" cy="223.0" r="4.5"/><circle class="q4" cx="591.6" cy="190.5" r="6.5"/><circle class="pt" cx="626.4" cy="238.6" r="4.5"/><circle class="pt" cx="661.2" cy="232.6" r="4.5"/><circle class="pt" cx="696.0" cy="213.3" r="4.5"/><circle class="q4" cx="730.8" cy="178.8" r="6.5"/><circle class="pt" cx="765.7" cy="231.2" r="4.5"/><circle class="pt" cx="800.5" cy="224.4" r="4.5"/><circle class="pt" cx="835.3" cy="204.2" r="4.5"/><circle class="q4" cx="870.1" cy="160.2" r="6.5"/><polyline class="fc alt" points="765.7,232.4 800.5,229.1 835.3,214.3 870.1,180.9 904.9,227.6 939.7,224.3 974.5,209.6 1009.3,176.1 1044.2,222.8 1079.0,219.5 1113.8,204.8 1148.6,171.3"/><circle class="fcpt alt" cx="765.7" cy="232.4" r="4.5"/><circle class="fcpt alt" cx="800.5" cy="229.1" r="4.5"/><circle class="fcpt alt" cx="835.3" cy="214.3" r="4.5"/><circle class="fcpt alt" cx="870.1" cy="180.9" r="4.5"/><circle class="fcpt alt" cx="904.9" cy="227.6" r="4.5"/><circle class="fcpt alt" cx="939.7" cy="224.3" r="4.5"/><circle class="fcpt alt" cx="974.5" cy="209.6" r="4.5"/><circle class="fcpt alt" cx="1009.3" cy="176.1" r="4.5"/><circle class="fcpt alt" cx="1044.2" cy="222.8" r="4.5"/><circle class="fcpt alt" cx="1079.0" cy="219.5" r="4.5"/><circle class="fcpt alt" cx="1113.8" cy="204.8" r="4.5"/><circle class="fcpt alt" cx="1148.6" cy="171.3" r="4.5"/><polyline class="fc" points="765.7,225.7 800.5,216.2 835.3,193.5 870.1,156.8 904.9,201.6 939.7,186.7 974.5,158.5 1009.3,117.2 1044.2,157.1 1079.0,133.6 1113.8,96.0 1148.6,45.9"/><circle class="fcpt" cx="765.7" cy="225.7" r="4.5"/><circle class="fcpt" cx="800.5" cy="216.2" r="4.5"/><circle class="fcpt" cx="835.3" cy="193.5" r="4.5"/><circle class="fcpt" cx="870.1" cy="156.8" r="4.5"/><circle class="fcpt" cx="904.9" cy="201.6" r="4.5"/><circle class="fcpt" cx="939.7" cy="186.7" r="4.5"/><circle class="fcpt" cx="974.5" cy="158.5" r="4.5"/><circle class="fcpt" cx="1009.3" cy="117.2" r="4.5"/><circle class="fcpt" cx="1044.2" cy="157.1" r="4.5"/><circle class="fcpt" cx="1079.0" cy="133.6" r="4.5"/><circle class="fcpt" cx="1113.8" cy="96.0" r="4.5"/><circle class="fcpt" cx="1148.6" cy="45.9" r="4.5"/><text class="val" x="1138.6" y="51.9" text-anchor="end">171.7</text><text class="val" x="1138.6" y="197.3" text-anchor="end">96.7</text><line class="fc" x1="76.4" x2="112.4" y1="82.1" y2="82.1"/><text class="lab" x="120.4" y="88.1" text-anchor="start">자기회귀 AR(4): 테스트 MAPE 5.79%</text><line class="fc alt" x1="76.4" x2="112.4" y1="106.1" y2="106.1"/><text class="lab" x="120.4" y="112.1" text-anchor="start">선형 추세 + 계절성 모형: 테스트 MAPE 6.35%</text></svg><figcaption>1~5년차로 추정한 두 방법의 예측을 8년차까지 늘린 것, 6년차가 테스트 기간</figcaption></figure></div><p class="pg">18 / 19</p></section><section class="slide " data-title="정리"><p class="kick">정리</p><h2>정리</h2><div class="body"><table class="lt sumt"><tr><th>개념</th><th>내용</th></tr><tr><td>시계열 예측</td><td>시간 순서로 관측한 과거의 값을 이용하여, 아직 관측하지 않은 미래의 값을 예측하는 방법</td></tr><tr><td>추세와 계절성</td><td>추세: 오랜 기간에 걸쳐 값이 꾸준히 늘거나 줄어드는 움직임, 계절성: 일정한 기간마다 같은 모양이 되풀이되는 움직임</td></tr><tr><td>naive 예측</td><td>naive 예측은 마지막 관측값을, seasonal naive 예측은 직전 주기의 같은 계절에 관측한 값을 예측값으로 씀</td></tr><tr><td>자기회귀</td><td>설명 변수가 직전 몇 기간의 값인 회귀 모형</td></tr><tr><td>추세·계절성 회귀</td><td>설명 변수가 시점 t와 계절인 회귀 모형</td></tr><tr><td>학습·테스트 기간</td><td>자료를 시간 순서대로 나누어 앞부분으로 모형을 추정하고, 마지막 부분으로 예측을 평가함</td></tr><tr><td>평가 지표</td><td>예측 오차 e = y − ŷ를 테스트 기간 전체에서 MSE나 MAPE로 요약함</td></tr><tr><td>방법 선택</td><td>테스트 오차가 가장 작은 방법을 고름</td></tr><tr><td>예측 기간</td><td>예측 기간이 길어질수록 예측 오차가 커짐</td></tr></table></div><p class="pg">19 / 19</p></section></main></div>
+<nav class="navbar"><button id="prev" aria-label="이전 장">‹</button><span id="count"></span><button id="next" aria-label="다음 장">›</button>
+<button id="tocbtn">목차 T</button><button id="fsbtn">전체 화면 F</button></nav>
+<aside class="toc" id="toc" hidden><ol><li><a href="#1">1. 시계열 예측</a></li><li><a href="#2">2. 시계열 예측이란</a></li><li><a href="#3">3. 시계열 예측의 수학적 정의</a></li><li><a href="#4">4. 시계열 데이터 예시: 백화점 분기 매출 (DepartmentStoreSales)</a></li><li><a href="#5">5. 구성 요소와 계절 주기</a></li><li><a href="#6">6. 시계열 예측 모델링 방식</a></li><li><a href="#7">7. naive 예측</a></li><li><a href="#8">8. seasonal naive 예측</a></li><li><a href="#9">9. 자기회귀 모형</a></li><li><a href="#10">10. 자기회귀 모형의 예측</a></li><li><a href="#11">11. 계절 자기회귀</a></li><li><a href="#12">12. 선형 추세 모형</a></li><li><a href="#13">13. 추세·계절성 회귀</a></li><li><a href="#14">14. 학습 기간과 테스트 기간</a></li><li><a href="#15">15. 예측 오차와 평가 지표</a></li><li><a href="#16">16. 학습 오차와 테스트 오차</a></li><li><a href="#17">17. 테스트 오차로 방법 선택</a></li><li><a href="#18">18. 예측 기간(forecast horizon)이 길어지면</a></li><li><a href="#19">19. 정리</a></li></ol></aside>
+<script>(function () {
+  var stage = document.getElementById("stage");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var count = document.getElementById("count");
+  var toc = document.getElementById("toc");
+  var links = Array.prototype.slice.call(toc.querySelectorAll("a"));
+  var cur = 0;
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight - 44;
+    var s = Math.min(w / 1280, h / 720);
+    stage.style.transform = "scale(" + s + ")";
+  }
+
+  function show(i, push) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (el, k) { el.classList.toggle("cur", k === cur); });
+    links.forEach(function (a, k) { a.classList.toggle("on", k === cur); });
+    count.textContent = (cur + 1) + " / " + slides.length;
+    if (push !== false && location.hash !== "#" + (cur + 1)) history.replaceState(null, "", "#" + (cur + 1));
+  }
+
+  function fromHash() {
+    var n = parseInt((location.hash || "#1").slice(1), 10);
+    show(isNaN(n) ? 0 : n - 1, false);
+  }
+
+  function toggleToc() { toc.hidden = !toc.hidden; }
+  function fullscreen() {
+    if (document.fullscreenElement) { document.exitFullscreen().catch(function () {}); }
+    else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(function () {}); }
+  }
+
+  document.getElementById("prev").addEventListener("click", function () { show(cur - 1); });
+  document.getElementById("next").addEventListener("click", function () { show(cur + 1); });
+  document.getElementById("tocbtn").addEventListener("click", toggleToc);
+  document.getElementById("fsbtn").addEventListener("click", fullscreen);
+  links.forEach(function (a, k) { a.addEventListener("click", function (e) { e.preventDefault(); show(k); toc.hidden = true; }); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === "PageDown" || k === " " || k === "Enter") { e.preventDefault(); show(cur + 1); }
+    else if (k === "ArrowLeft" || k === "PageUp" || k === "Backspace") { e.preventDefault(); show(cur - 1); }
+    else if (k === "Home") { show(0); }
+    else if (k === "End") { show(slides.length - 1); }
+    else if (k === "t" || k === "T") { toggleToc(); }
+    else if (k === "f" || k === "F") { fullscreen(); }
+    else if (k === "Escape") { toc.hidden = true; }
+  });
+
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", fromHash);
+  fit();
+  fromHash();
+})();
+</script>
+<script>
+/* 이론 문서 편집 모드. 주소 끝에 ?edit 를 붙여 열면 화면의 글자를 눌러 바로 고칠 수 있다.
+   고친 칸은 노랗게 표시되고 같은 브라우저에 저장된다. "고친 내용 복사"로 전/후 목록을 복사해 Claude에게 붙여 넣으면
+   Claude가 원본(생성기 build.py 또는 이론.html)에 옮긴다. make_all.py가 build/theory/*.html에 넣는다. */
+(function () {
+  if (!/[?&]edit(=|&|$)/.test(location.search)) return;
+  var KEY = "theory-edit:" + location.pathname;
+  var SEL = "h1,h2,h3,h4,p,li,td,th,figcaption,dt,dd,blockquote";
+  var SKIP = "svg, math, .katex, script, style, nav, .navbar, .toc, #toc, .pg, .ed-bar, .ed-panel";
+
+  function plain(el) {
+    var c = el.cloneNode(true);
+    c.querySelectorAll(".katex").forEach(function (k) {
+      var a = k.querySelector('annotation[encoding="application/x-tex"]');
+      k.replaceWith(a ? "\\(" + a.textContent + "\\)" : "[수식]");
+    });
+    c.querySelectorAll("math").forEach(function (m) { m.replaceWith("[수식]"); });
+    c.querySelectorAll("svg").forEach(function (s) { s.replaceWith("[그림]"); });
+    return c.textContent.replace(/\s+/g, " ").trim();
+  }
+  function hasText(el) {
+    for (var n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && n.data.trim()) return true;
+    return false;
+  }
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } }
+  function save(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+
+  function start() {
+    var units = [].slice.call(document.querySelectorAll(".slide"));
+    var slides = units.length > 0;
+    if (!slides) units = [document.body];
+    var heads = [].slice.call(document.querySelectorAll("h1, h2, h3"));
+    var items = [], seen = {};
+    units.forEach(function (u, ui) {
+      var h = u.querySelector("h1, h2");
+      var title = slides ? (ui + 1) + "장" + (h ? " " + plain(h) : "") : "";
+      [].slice.call(u.querySelectorAll("*")).forEach(function (el) {
+        if (el.closest(SKIP)) return;
+        if (!el.matches(SEL) && !hasText(el)) return;
+        for (var p = el.parentElement; p && p !== u; p = p.parentElement)
+          if (p.isContentEditable || p.hasAttribute("data-ed")) return;
+        var orig = plain(el);
+        if (!orig) return;
+        var k = orig + "#" + (seen[orig] = (seen[orig] || 0) + 1);
+        var label = title;
+        if (!slides) {
+          var prev = heads.filter(function (x) { return x === el || (x.compareDocumentPosition(el) & 4); }).pop();
+          label = prev ? plain(prev) : "본문";
+        }
+        el.setAttribute("data-ed", "");
+        el.setAttribute("contenteditable", "true");
+        el.setAttribute("spellcheck", "false");
+        el.querySelectorAll("svg, math, .katex").forEach(function (m) { m.setAttribute("contenteditable", "false"); });
+        items.push({ el: el, key: k, orig: orig, label: label });
+      });
+    });
+
+    var store = load(), kept = {};
+    items.forEach(function (it) {
+      var s = store[it.key];
+      if (s && s.orig === it.orig) { it.el.innerHTML = s.html; kept[it.key] = s; }
+    });
+    save(kept);
+
+    var bar = document.createElement("div");
+    bar.className = "ed-bar";
+    bar.innerHTML = '<span>편집 모드 · 글자를 눌러 고치세요 · 고친 곳 <b class="ed-n">0</b></span>' +
+      '<button class="ed-copy">고친 내용 복사</button><button class="ed-reset">모두 되돌리기</button>';
+    document.body.appendChild(bar);
+    var panel = document.createElement("div");
+    panel.className = "ed-panel";
+    panel.hidden = true;
+    panel.innerHTML = '<p>아래 글이 복사되었습니다. Claude Code 창에 붙여 넣고 "반영해"라고 하세요.</p><textarea readonly></textarea><button class="ed-close">닫기</button>';
+    document.body.appendChild(panel);
+
+    function changed() { return items.filter(function (it) { return plain(it.el) !== it.orig; }); }
+    function refresh() {
+      var st = {};
+      items.forEach(function (it) {
+        var ch = plain(it.el) !== it.orig;
+        it.el.classList.toggle("ed-changed", ch);
+        if (ch) st[it.key] = { orig: it.orig, html: it.el.innerHTML };
+      });
+      save(st);
+      bar.querySelector(".ed-n").textContent = Object.keys(st).length;
+    }
+    refresh();
+
+    document.addEventListener("input", function (e) { if (e.target.closest && e.target.closest("[data-ed]")) refresh(); });
+    window.addEventListener("keydown", function (e) {
+      if (!e.target.isContentEditable) return;
+      e.stopPropagation();
+      if (e.key === "Enter") e.preventDefault();
+    }, true);
+    document.addEventListener("paste", function (e) {
+      if (!e.target.closest || !e.target.closest("[data-ed]")) return;
+      e.preventDefault();
+      var t = (e.clipboardData || window.clipboardData).getData("text").replace(/\s+/g, " ");
+      document.execCommand("insertText", false, t);
+    });
+
+    bar.querySelector(".ed-copy").addEventListener("click", function () {
+      var ch = changed();
+      var name = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
+      var out = [name + " 이론 수정 " + ch.length + "곳", ""];
+      var last = null;
+      ch.forEach(function (it) {
+        if (it.label !== last) { out.push("[" + it.label + "]"); last = it.label; }
+        out.push("전: " + it.orig, "후: " + plain(it.el), "");
+      });
+      var txt = out.join("\n");
+      var ta = panel.querySelector("textarea");
+      ta.value = txt;
+      panel.hidden = false;
+      ta.focus();
+      ta.select();
+      try { if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(function () { document.execCommand("copy"); }); else document.execCommand("copy"); } catch (e) {}
+    });
+    panel.querySelector(".ed-close").addEventListener("click", function () { panel.hidden = true; });
+    bar.querySelector(".ed-reset").addEventListener("click", function () {
+      if (!confirm("고친 내용을 모두 되돌릴까요?")) return;
+      save({});
+      location.reload();
+    });
+
+    var css = document.createElement("style");
+    css.textContent =
+      "[data-ed]:hover{outline:1px dashed rgba(200,112,30,.6);outline-offset:2px}" +
+      "[data-ed]:focus{outline:2px solid #c8701e;outline-offset:2px}" +
+      ".ed-changed{background:#fff1a8 !important;box-shadow:0 0 0 2px #fff1a8}" +
+      ".ed-bar{position:fixed;top:8px;right:8px;z-index:9999;display:flex;gap:8px;align-items:center;padding:6px 10px;background:#18212b;color:#fff;font:14px/1.3 sans-serif;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.25)}" +
+      ".ed-bar button,.ed-panel button{font:13px sans-serif;padding:4px 10px;border:0;border-radius:4px;background:#fff;color:#18212b;cursor:pointer}" +
+      ".ed-panel{position:fixed;inset:60px 10% auto 10%;z-index:9999;background:#fff;color:#18212b;padding:14px;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.3);font:14px/1.5 sans-serif}" +
+      ".ed-panel[hidden]{display:none}" +
+      ".ed-panel textarea{width:100%;height:50vh;font:13px/1.5 monospace;margin:8px 0}";
+    document.head.appendChild(css);
+  }
+
+  if (document.readyState === "complete") setTimeout(start, 300);
+  else window.addEventListener("load", function () { setTimeout(start, 300); });
+})();
+</script>
+</body></html>
